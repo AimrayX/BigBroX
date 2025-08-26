@@ -24,7 +24,7 @@ std::string UCIHandler::getStartingPosition() {
                 return currentCommand;
             } 
         }
-        currentCommand = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        currentCommand = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 \n";
         return currentCommand;
 
     } else if (currentCommand == "fen") {
@@ -53,7 +53,7 @@ std::string UCIHandler::getStartingPosition() {
                 return currentCommand;
             } 
         }
-        currentCommand = fen;
+        currentCommand = fen + "\n";
         return currentCommand;
     }
 }

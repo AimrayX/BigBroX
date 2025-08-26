@@ -2,6 +2,7 @@
 #define ENGINE_HPP
 
 #include <string>
+#include <stdint.h>
 #include <iostream>
 #include <vector>
 #include <unordered_map>
@@ -10,14 +11,36 @@
 class Engine
 {
 private:
-    /* data */
+    uint64_t mWhitePawns;
+    uint64_t mWhiteRooks;
+    uint64_t mWhiteKnights;
+    uint64_t mWhiteBishops;
+    uint64_t mWhiteKing;
+    uint64_t mWhiteQueen;
+    uint64_t mBlackPawns;
+    uint64_t mBlackRooks;
+    uint64_t mBlackKnights;
+    uint64_t mBlackBishops;
+    uint64_t mBlackKing;
+    uint64_t mBlackQueen;    
+
+    bool mTurn;
+    bool mWhiteAbleCastleKing;
+    bool mWhiteAbleCastleQueen;
+    bool mBlackAbleCastleKing;
+    bool mBlackAbleCastleQueen;
+
+    std::string mEnPassentSquare;
+    int mHalfMove;
+    int mFullMove;
+
 public:
-    int mWhitePawns;
     int mDepth;
     std::string mStartingPosition;
     std::string mLastBestMove;
 
     int mSetStartingPosition(std::string startingPosition);
+    int Engine::mMovePiece(std::string move);
     std::string mSearch();
 
     Engine();
@@ -30,28 +53,11 @@ private:
     uint64_t currentHash;
 
 public:
-    ZobristHashing(int numPieces) {
-        std::random_device rd;
-        std::mt19937_64 gen(rd());
-        std::uniform_int_distribution<uint64_t> dis;
+    ZobristHashing(int numPieces);
 
-        for (int i = 0; i < numPieces; ++i) {
-            pieceHashes[i] = std::vector<uint64_t>(64);
-            for (int j = 0; j < 64; ++j) {
-                pieceHashes[i][j] = dis(gen);
-            }
-        }
-        currentHash = 0;
-    }
+    void movePiece(int piece, int from, int to);
 
-    void movePiece(int piece, int from, int to) {
-        currentHash ^= pieceHashes[piece][from];
-        currentHash ^= pieceHashes[piece][to];
-    }
-
-    uint64_t getHash() const {
-        return currentHash;
-    }
+    uint64_t getHash() const;
 
     ZobristHashing();
     ~ZobristHashing();

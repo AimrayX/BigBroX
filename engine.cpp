@@ -1,6 +1,86 @@
 #include "engine.hpp"
 
+#include <iostream>
+#include <sstream>
+
 int Engine::mSetStartingPosition(std::string startingPosition) {
+
+    for (int i = 0; i < 71; i++) {
+
+        if    (startingPosition[i] == '8' || startingPosition[i] == '7' 
+            || startingPosition[i] == '6' || startingPosition[i] == '5' 
+            || startingPosition[i] == '4' || startingPosition[i] == '3' 
+            || startingPosition[i] == '2' || startingPosition[i] == '1') {
+            i += startingPosition[i] - '0';
+        } else if (startingPosition[i] == 'r') {
+            mBlackRooks ^= 1 << (63-i);
+        } else if (startingPosition[i] == 'n') {
+            mBlackKnights ^= 1 << (63-i);
+        } else if (startingPosition[i] == 'b') {
+            mBlackBishops ^= 1 << (63-i);
+        } else if (startingPosition[i] == 'q') {
+            mBlackQueen ^= 1 << (63-i);
+        } else if (startingPosition[i] == 'k') {
+            mBlackKing ^= 1 << (63-i);
+        } else if (startingPosition[i] == 'p') {
+            mBlackPawns ^= 1 << (63-i);
+        } else if (startingPosition[i] == 'R') {
+            mWhiteRooks ^= 1 << (63-i);
+        } else if (startingPosition[i] == 'N') {
+            mWhiteKnights ^= 1 << (63-i);
+        } else if (startingPosition[i] == 'B') {
+            mWhiteBishops ^= 1 << (63-i);
+        } else if (startingPosition[i] == 'Q') {
+            mWhiteQueen ^= 1 << (63-i);
+        } else if (startingPosition[i] == 'K') {
+            mWhiteKing ^= 1 << (63-i);
+        } else if (startingPosition[i] == 'P') {
+            mWhitePawns ^= 1 << (63-i);
+        }
+        
+    }
+    std::istringstream iss(startingPosition);
+    std::string temp;
+    std::getline(iss, temp, ' ');
+
+    std::getline(iss, temp, ' ');
+    if (temp == "w") {
+        mTurn = 1;
+    } else {
+        mTurn = 0;
+    }
+
+    std::getline(iss, temp, ' ');
+    for (int i = 0; i < temp.length(); i++)
+    {
+        if (temp[i] == 'K') {
+            mWhiteAbleCastleKing = true;
+        } else if (temp[i] == 'Q') {
+            mWhiteAbleCastleQueen = true;
+        } else if (temp[i] == 'k') {
+            mBlackAbleCastleKing = true;
+        } else if (temp[i] == 'q') {
+            mBlackAbleCastleQueen = true;
+        }
+    }
+
+    std::getline(iss, temp, ' ');
+    mEnPassentSquare = temp;
+    
+    std::getline(iss, temp, ' ');
+    mHalfMove = std::stoi(temp);
+
+    std::getline(iss, temp, ' ');
+    mFullMove = std::stoi(temp); 
+
+    while (iss >> temp) {
+        mMovePiece(temp);
+    }
+
+    return 0;
+}
+
+int Engine::mMovePiece(std::string move) {
 
 }
 
@@ -35,7 +115,7 @@ Engine::~Engine() {
 }
 
 ZobristHashing::ZobristHashing() {
-    
+
 }
 
 ZobristHashing::~ZobristHashing() {
