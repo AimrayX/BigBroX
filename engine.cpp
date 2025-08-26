@@ -4,30 +4,40 @@ int Engine::mSetStartingPosition(std::string startingPosition) {
 
 }
 
-int Engine::mInitZobristHashing() {
-    for (int i = 0; i < 64; i++) {
-        for (int j = 0; j < 12; j++) {
-        table[i][j] = random_bitstring()
-        }
-    }
-    table.black_to_move = random_bitstring()
+ZobristHashing::ZobristHashing(int numPieces) {
+        std::random_device rd;
+        std::mt19937_64 gen(rd());
+        std::uniform_int_distribution<uint64_t> dis;
 
+        for (int i = 0; i < numPieces; ++i) {
+            pieceHashes[i] = std::vector<uint64_t>(64);
+            for (int j = 0; j < 64; ++j) {
+                pieceHashes[i][j] = dis(gen);
+            }
+        }
+        currentHash = 0;
+    }
+
+void ZobristHashing::movePiece(int piece, int from, int to) {
+    currentHash ^= pieceHashes[piece][from];
+    currentHash ^= pieceHashes[piece][to];
 }
 
-int Engine::mZobristHash(int board) {
-    h := 0
-    if is_black_turn(board):
-        h := h XOR table.black_to_move
-    for i from 1 to 64:      # loop over the board positions
-        if board[i] ≠ empty:
-            j := the piece at board[i], as listed in the constant indices, above
-            h := h XOR table[i][j]
-    return h
-
+uint64_t ZobristHashing::getHash() const {
+    return currentHash;
 }
 
 Engine::Engine() {
+    ZobristHashing zobrist;
 }
 
 Engine::~Engine() {
+}
+
+ZobristHashing::ZobristHashing() {
+    
+}
+
+ZobristHashing::~ZobristHashing() {
+    
 }
