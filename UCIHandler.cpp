@@ -6,6 +6,8 @@
 #include <stop_token>
 #include <chrono>
 
+#include "attack.hpp"
+
 std::string UCIHandler::getStartingPosition() {
     lastCommand = currentCommand;
     std::string tempCommand;
@@ -73,6 +75,8 @@ int UCIHandler::loop() {
     while (currentCommand != "isready") {
         std::getline(std::cin, currentCommand);
     }
+    
+    attack::init();
 
     std::cout << "readyok" << std::endl;
 

@@ -1,6 +1,6 @@
 #include "attack.hpp"
 
-int attack::mComputeKnightAttacks() {
+void attack::computeKnightAttacks() {
     uint64_t mask = 0ULL;
     for (int i = 0; i < 64; i++) {
 
@@ -42,11 +42,9 @@ int attack::mComputeKnightAttacks() {
 
         mask = 0ULL;
     }
-    
-    return 0;
 }
 
-int attack::mComputeKingAttacks() {
+void attack::computeKingAttacks() {
     uint64_t mask = 0ULL;
     for (int i = 0; i < 64; i++) {
 
@@ -88,11 +86,9 @@ int attack::mComputeKingAttacks() {
 
         mask = 0ULL;
     }
-
-    return 0;
 }
 
-uint64_t attack::mVertHorMask(uint64_t piece) {
+uint64_t attack::vertHorMask(uint64_t piece) {
     int rank = __builtin_ctzll(piece) / 8;
     int file = 7 - (__builtin_ctzll(piece) % 8);
 
@@ -105,7 +101,7 @@ uint64_t attack::mVertHorMask(uint64_t piece) {
     return mask;
 }
 
-uint64_t attack::mDiagonalMask(uint64_t piece) {
+uint64_t attack::diagonalMask(uint64_t piece) {
     int rank = __builtin_ctzll(piece) / 8;
     int file = 7 - (__builtin_ctzll(piece) % 8);
 
@@ -132,7 +128,7 @@ namespace attack {
 }
 
 void attack::init() {
-    mComputeKnightAttacks();
-    mComputeKingAttacks();
+    computeKnightAttacks();
+    computeKingAttacks();
 }
 
