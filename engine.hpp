@@ -7,23 +7,27 @@
 #include <vector>
 #include <unordered_map>
 #include <random>
+#include <stop_token>
 
 class Engine
 {
 private:
-    
+    int mDepth;
 
     
 
 
 
 public:
-    int mDepth;
+    int mCurrentDepth;
 
     std::string mLastBestMove;
 
+    void setDepth(int depth);
+    int getDepth();
+
     uint64_t mAlgebraicToBit(std::string alge);
-    std::string mSearch();
+    std::string search(std::stop_token stoken);
 
     Engine();
     ~Engine();

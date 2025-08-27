@@ -2,6 +2,9 @@
 
 #include <iostream>
 #include <string>
+#include <thread>
+#include <stop_token>
+#include <chrono>
 
 std::string UCIHandler::getStartingPosition() {
     lastCommand = currentCommand;
@@ -61,21 +64,36 @@ std::string UCIHandler::getStartingPosition() {
 int UCIHandler::loop() {
     //start
     std::cout << "Waiting for gui to start engine..." << std::endl;
-    while (currentCommand != "uci")
-    {
+    while (currentCommand != "uci") {
         std::getline(std::cin, currentCommand);
     }
     std::cout << "id name BigBroX\nid author Hall T.\noption name Hash type spin default 16 min 1 max 1024\nuciok" << std::endl;
     
     lastCommand = currentCommand;
-    while (currentCommand != "isready")
-    {
+    while (currentCommand != "isready") {
         std::getline(std::cin, currentCommand);
     }
 
-    std::string startingPosition = getStartingPosition();
-    game.position.setStartingPosition(startingPosition);
+    std::cout << "readyok" << std::endl;
 
+    std::getline(std::cin, currentCommand);
+    if (currentCommand[0] == 's') {
+        //handle later
+    } else if (currentCommand[0] == 'p') {
+        std::string startingPosition = getStartingPosition();
+        game.position.setStartingPosition(startingPosition);
+    }
+    
+    while (currentCommand[0] != 'g') {
+        std::getline(std::cin, currentCommand);
+    }
+
+    std::jthread t{ &Engine::search, &game.engine,  };
+
+    while (currentCommand != "stop") {
+        std::getline(std::cin, currentCommand);
+    }
+    t.request_stop();
     
     
     return 0;

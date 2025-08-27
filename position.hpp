@@ -32,14 +32,13 @@ public:
     int mHalfMove;
     int mFullMove;
 
-    uint64_t knightAttacks[64];
-    uint64_t kingAttacks[64];
     Piece board[64];
 
     int attackGeneration(uint64_t piece);
     int getPseudoLegalMoves(uint64_t piece);
     int filterLegalMoves(uint64_t piece);
     int setStartingPosition(std::string startingPosition);
+    uint64_t getAllOccupiedSquares();
     void doMove(Move m);
 
     Position(/* args */);

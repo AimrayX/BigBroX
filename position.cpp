@@ -106,6 +106,10 @@ int Position::filterLegalMoves(uint64_t piece) {
 
 }
 
+uint64_t getAllOccupiedSquares() {
+    
+}
+
 void Position::doMove(Move m) {
        
     

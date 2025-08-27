@@ -1,19 +1,10 @@
 #include "engine.hpp"
+
 #include "types.hpp"
+#include "attack.hpp"
 
 #include <iostream>
 #include <sstream>
-
-
-
-
-
-
-
-
-
-
-
 
 
 ZobristHashing::ZobristHashing(int numPieces) {
@@ -37,6 +28,22 @@ void ZobristHashing::movePiece(int piece, int from, int to) {
 
 uint64_t ZobristHashing::getHash() const {
     return currentHash;
+}
+
+std::string Engine::search(std::stop_token stoken) {
+    while (!stoken.stop_requested() || mDepth != mCurrentDepth) {
+        //search for best move
+
+    }
+    return mLastBestMove;
+}
+
+void Engine::setDepth(int depth) {
+    mDepth = depth;
+}
+
+int Engine::getDepth() {
+    return mDepth;
 }
 
 Engine::Engine() {

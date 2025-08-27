@@ -8,12 +8,12 @@
 class Game
 {
 private:
-    /* data */
+    
 public:
     Position position;
     Engine engine;
 
-    void start();
+    int init();
     void printBoard();
 
     Game(/* args */);
