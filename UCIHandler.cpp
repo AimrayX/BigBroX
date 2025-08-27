@@ -58,7 +58,7 @@ std::string UCIHandler::getStartingPosition() {
     }
 }
 
-int UCIHandler::start() {
+int UCIHandler::loop() {
     //start
     std::cout << "Waiting for gui to start engine..." << std::endl;
     while (currentCommand != "uci")
@@ -74,7 +74,7 @@ int UCIHandler::start() {
     }
 
     std::string startingPosition = getStartingPosition();
-    engine.mSetStartingPosition(startingPosition);
+    game.position.setStartingPosition(startingPosition);
 
 }
 

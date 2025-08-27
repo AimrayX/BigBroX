@@ -17,3 +17,21 @@ struct Move {
     Square to;
     char promotion;
 };
+
+enum Piece {
+    NO_PIECE, W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
+    B_PAWN, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING
+};
+
+enum CastlingRights {
+    WHITE_OO = 1,
+    WHITE_OOO = 2,
+    BLACK_OO = 4,
+    BLACK_OOO = 8
+};
+
+enum Color { 
+    WHITE, 
+    BLACK, 
+    COLOR_NB 
+};

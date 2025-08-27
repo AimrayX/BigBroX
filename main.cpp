@@ -6,7 +6,7 @@ int main() {
     UCIHandler uciHandler;
 
     while (uciHandler.state != 1) {
-        uciHandler.start();
+        uciHandler.loop();
     }
     
 

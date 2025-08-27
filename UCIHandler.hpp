@@ -1,7 +1,7 @@
 #ifndef UCIHANDLER_HPP
 #define UCIHANDLER_HPP
 
-#include "engine.hpp"
+#include "game.hpp"
 
 #include <string>
 
@@ -12,12 +12,13 @@ private:
  */
     std::string getStartingPosition();
 public:
+    Game game;
     int state;
     std::string lastCommand;
     std::string currentCommand;
-    Engine engine;
 
-    int start();
+
+    int loop();
 
     UCIHandler(/* args */);
     ~UCIHandler();
