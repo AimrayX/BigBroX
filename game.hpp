@@ -14,7 +14,6 @@ public:
     Engine engine;
 
     void start();
-    void applyMove(Move m);
     void printBoard();
 
     Game(/* args */);

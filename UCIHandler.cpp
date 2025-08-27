@@ -76,6 +76,9 @@ int UCIHandler::loop() {
     std::string startingPosition = getStartingPosition();
     game.position.setStartingPosition(startingPosition);
 
+    
+    
+    return 0;
 }
 
 
