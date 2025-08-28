@@ -100,11 +100,25 @@ int Position::setStartingPosition(std::string startingPosition) {
 int Position::attackGeneration(Piece piece, int index) {
     uint64_t attack = 0;
     if (piece | (Piece::W_ROOK | Piece::B_ROOK) == (mWhiteBishops | mBlackBishops)) {
-        attack = attack::vertHorMask(index);
+        attack = attack::vertHorRay(index, mWhiteBishops | mWhiteKing | mWhiteKnights 
+                                            | mWhitePawns | mWhiteQueen | mWhiteRooks,
+                                             mBlackBishops | mBlackKing | mBlackKnights 
+                                            | mBlackPawns | mBlackQueen | mBlackRooks);
     } else if (piece | (mWhiteBishops | mBlackBishops) == (mWhiteBishops | mBlackBishops)) {
-        attack = attack::diagonalMask(index);
+        attack = attack::diagonalRay(index, mWhiteBishops | mWhiteKing | mWhiteKnights 
+                                            | mWhitePawns | mWhiteQueen | mWhiteRooks,
+                                             mBlackBishops | mBlackKing | mBlackKnights 
+                                            | mBlackPawns | mBlackQueen | mBlackRooks);
     } else if (piece | (mWhiteQueen | mBlackQueen) == (mWhiteQueen | mBlackQueen)) {
-        attack = attack::diagonalMask(index) | attack::vertHorMask(piece);
+        attack = attack::diagonalRay(index, mWhiteBishops | mWhiteKing | mWhiteKnights 
+                                            | mWhitePawns | mWhiteQueen | mWhiteRooks,
+                                             mBlackBishops | mBlackKing | mBlackKnights 
+                                            | mBlackPawns | mBlackQueen | mBlackRooks) 
+                                            | attack::vertHorRay(piece, 
+                                             mWhiteBishops | mWhiteKing | mWhiteKnights 
+                                            | mWhitePawns | mWhiteQueen | mWhiteRooks,
+                                             mBlackBishops | mBlackKing | mBlackKnights 
+                                            | mBlackPawns | mBlackQueen | mBlackRooks);
     } else if (piece | (mWhiteKing | mBlackKing) == (mWhiteKing | mBlackKing)) {
 
         attack = attack::kingAttacks[index];

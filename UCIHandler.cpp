@@ -92,7 +92,7 @@ int UCIHandler::loop() {
         std::getline(std::cin, currentCommand);
     }
 
-    std::jthread t1{ &Engine::search, &game.engine,  };
+    std::jthread t1{ &Engine::search, &game.engine, game.position };
 
     //here it should read engine variables and send them to the gui
     //and not block like it does now
