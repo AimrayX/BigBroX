@@ -92,15 +92,27 @@ int UCIHandler::loop() {
         std::getline(std::cin, currentCommand);
     }
 
-    std::jthread t{ &Engine::search, &game.engine,  };
+    std::jthread t1{ &Engine::search, &game.engine,  };
 
+    //here it should read engine variables and send them to the gui
+    //and not block like it does now
+    std::jthread t2(getEngineState);
     while (currentCommand != "stop") {
         std::getline(std::cin, currentCommand);
     }
-    t.request_stop();
+    t1.request_stop();
+    t2.request_stop();
     
     
     return 0;
+}
+
+void UCIHandler::getEngineState(std::stop_token stoken) {
+    while (!stoken.stop_requested()) {
+        std::cout << "info depth " << std::to_string(game.engine.mCurrentDepth.load()) << std::endl;
+        std::cout << "info score cp " << std::to_string(game.engine.mCurrentEval.load()) << std::endl;
+        std::cout << "info time " << std::to_string(game.engine.mTimeSpentMs.load()) << std::endl;
+    }
 }
 
 

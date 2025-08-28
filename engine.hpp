@@ -8,18 +8,17 @@
 #include <unordered_map>
 #include <random>
 #include <stop_token>
+#include <atomic>
 
 class Engine
 {
 private:
     int mDepth;
 
-    
-
-
-
 public:
-    int mCurrentDepth;
+    std::atomic<int> mCurrentDepth;
+    std::atomic<int> mCurrentEval;
+    std::atomic<unsigned long long> mTimeSpentMs;
 
     std::string mLastBestMove;
 

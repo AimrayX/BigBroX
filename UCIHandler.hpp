@@ -19,6 +19,7 @@ public:
 
 
     int loop();
+    void getEngineState(std::stop_token stoken);
 
     UCIHandler(/* args */);
     ~UCIHandler();

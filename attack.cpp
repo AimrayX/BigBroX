@@ -88,9 +88,9 @@ void attack::computeKingAttacks() {
     }
 }
 
-uint64_t attack::vertHorMask(uint64_t piece) {
-    int rank = __builtin_ctzll(piece) / 8;
-    int file = 7 - (__builtin_ctzll(piece) % 8);
+uint64_t attack::vertHorMask(int index) {
+    int rank = index / 8;
+    int file = 7 - (index % 8);
 
     uint64_t mask = 0ULL;
     for (int r = rank + 1; r < 7; r++) mask |= 1ULL << (r * 8 + file);
@@ -101,9 +101,9 @@ uint64_t attack::vertHorMask(uint64_t piece) {
     return mask;
 }
 
-uint64_t attack::diagonalMask(uint64_t piece) {
-    int rank = __builtin_ctzll(piece) / 8;
-    int file = 7 - (__builtin_ctzll(piece) % 8);
+uint64_t attack::diagonalMask(int index) {
+    int rank = index / 8;
+    int file = 7 - (index % 8);
 
     uint64_t mask = 0ULL;
     for (int r = rank + 1, f = file + 1; r < 7 && f < 7; r++, f++) {

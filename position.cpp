@@ -7,38 +7,50 @@
 #include "attack.hpp"
 
 int Position::setStartingPosition(std::string startingPosition) {
-
+        int realIndex = 0;
     for (int i = 0; i < 71; i++) {
-
+        realIndex = (63-i) + (i-((63-i) % 8));
         if    (startingPosition[i] == '8' || startingPosition[i] == '7' 
             || startingPosition[i] == '6' || startingPosition[i] == '5' 
             || startingPosition[i] == '4' || startingPosition[i] == '3' 
             || startingPosition[i] == '2' || startingPosition[i] == '1') {
             i += startingPosition[i] - '0';
         } else if (startingPosition[i] == 'r') {
-            mBlackRooks ^= 1 << (63-i);
+            mBlackRooks |= 1 << realIndex;
+            board[realIndex] = Piece::B_ROOK;
         } else if (startingPosition[i] == 'n') {
-            mBlackKnights ^= 1 << (63-i);
+            mBlackKnights |= 1 << realIndex;
+            board[realIndex] = Piece::B_KNIGHT;
         } else if (startingPosition[i] == 'b') {
-            mBlackBishops ^= 1 << (63-i);
+            mBlackBishops |= 1 << realIndex;
+            board[realIndex] = Piece::B_BISHOP;
         } else if (startingPosition[i] == 'q') {
-            mBlackQueen ^= 1 << (63-i);
+            mBlackQueen |= 1 << realIndex;
+            board[realIndex] = Piece::B_QUEEN;
         } else if (startingPosition[i] == 'k') {
-            mBlackKing ^= 1 << (63-i);
+            mBlackKing |= 1 << realIndex;
+            board[realIndex] = Piece::B_KING;
         } else if (startingPosition[i] == 'p') {
-            mBlackPawns ^= 1 << (63-i);
+            mBlackPawns |= 1 << realIndex;
+            board[realIndex] = Piece::B_PAWN;
         } else if (startingPosition[i] == 'R') {
-            mWhiteRooks ^= 1 << (63-i);
+            mWhiteRooks |= 1 << realIndex;
+            board[realIndex] = Piece::W_ROOK;
         } else if (startingPosition[i] == 'N') {
-            mWhiteKnights ^= 1 << (63-i);
+            mWhiteKnights |= 1 << realIndex;
+            board[realIndex] = Piece::W_KNIGHT;
         } else if (startingPosition[i] == 'B') {
-            mWhiteBishops ^= 1 << (63-i);
+            mWhiteBishops |= 1 << realIndex;
+            board[realIndex] = Piece::W_BISHOP;
         } else if (startingPosition[i] == 'Q') {
-            mWhiteQueen ^= 1 << (63-i);
+            mWhiteQueen |= 1 << realIndex;
+            board[realIndex] = Piece::W_QUEEN;
         } else if (startingPosition[i] == 'K') {
-            mWhiteKing ^= 1 << (63-i);
+            mWhiteKing |= 1 << realIndex;
+            board[realIndex] = Piece::W_KING;
         } else if (startingPosition[i] == 'P') {
-            mWhitePawns ^= 1 << (63-i);
+            mWhitePawns |= 1 << realIndex;
+            board[realIndex] = Piece::W_PAWN;
         }
         
     }
@@ -85,14 +97,17 @@ int Position::setStartingPosition(std::string startingPosition) {
     return 0;
 }
 
-int Position::attackGeneration(uint64_t piece) {
+int Position::attackGeneration(Piece piece, int index) {
     uint64_t attack = 0;
-    if (piece | (mWhiteRooks | mBlackRooks) == (mWhiteBishops | mBlackBishops)) {
-        attack = attack::mVertHorMask(piece);
+    if (piece | (Piece::W_ROOK | Piece::B_ROOK) == (mWhiteBishops | mBlackBishops)) {
+        attack = attack::vertHorMask(index);
     } else if (piece | (mWhiteBishops | mBlackBishops) == (mWhiteBishops | mBlackBishops)) {
-        attack = attack::mDiagonalMask(piece);
+        attack = attack::diagonalMask(index);
     } else if (piece | (mWhiteQueen | mBlackQueen) == (mWhiteQueen | mBlackQueen)) {
-        attack = attack::mDiagonalMask(piece) | attack::mVertHorMask(piece);
+        attack = attack::diagonalMask(index) | attack::vertHorMask(piece);
+    } else if (piece | (mWhiteKing | mBlackKing) == (mWhiteKing | mBlackKing)) {
+
+        attack = attack::kingAttacks[index];
     }
     
     return attack;

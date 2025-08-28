@@ -33,7 +33,9 @@ uint64_t ZobristHashing::getHash() const {
 std::string Engine::search(std::stop_token stoken) {
     while (!stoken.stop_requested() || mDepth != mCurrentDepth) {
         //search for best move
-
+        //go through all moves
+        //evaluate position
+        //go to next depth and analyse best move for opponent and so on
     }
     return mLastBestMove;
 }

@@ -34,7 +34,7 @@ public:
 
     Piece board[64];
 
-    int attackGeneration(uint64_t piece);
+    int attackGeneration(Piece piece, int index);
     int getPseudoLegalMoves(uint64_t piece);
     int filterLegalMoves(uint64_t piece);
     int setStartingPosition(std::string startingPosition);
