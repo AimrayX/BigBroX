@@ -4,7 +4,6 @@
 #include <string>
 #include <thread>
 #include <stop_token>
-#include <chrono>
 
 #include "attack.hpp"
 
@@ -61,6 +60,7 @@ std::string UCIHandler::getStartingPosition() {
         currentCommand = fen + "\n";
         return currentCommand;
     }
+    return "";
 }
 
 int UCIHandler::loop() {
