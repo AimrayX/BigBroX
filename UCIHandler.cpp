@@ -26,11 +26,10 @@ std::string UCIHandler::getStartingPosition() {
                 std::string movesLine;
                 std::getline(std::cin, movesLine);
                 currentCommand = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 " + movesLine;
-                return currentCommand;
             } 
+        } else {
+            currentCommand = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 \n";
         }
-        currentCommand = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 \n";
-        return currentCommand;
 
     } else if (currentCommand == "fen") {
         std::string fen;
@@ -55,12 +54,12 @@ std::string UCIHandler::getStartingPosition() {
                 std::string movesLine;
                 std::getline(std::cin, movesLine);
                 currentCommand = fen + " " + movesLine;
-                return currentCommand;
             } 
+        } else {
+          currentCommand = fen + "\n";
         }
-        currentCommand = fen + "\n";
-        return currentCommand;
     }
+  return currentCommand;
 }
 
 int UCIHandler::loop() {
@@ -92,18 +91,13 @@ int UCIHandler::loop() {
         std::getline(std::cin, currentCommand);
     }
 
-    std::jthread t1{ &Engine::search, &game.engine,  };
+    std::jthread t1([this](std::stop_token st) {game.engine.search(game.position, st);});
 
-    //here it should read engine variables and send them to the gui
-    //and not block like it does now
-    std::jthread t2(getEngineState);
     while (currentCommand != "stop") {
         std::getline(std::cin, currentCommand);
     }
     t1.request_stop();
-    t2.request_stop();
-    
-    
+  
     return 0;
 }
 

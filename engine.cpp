@@ -3,9 +3,7 @@
 #include "types.hpp"
 #include "attack.hpp"
 
-#include <iostream>
-#include <sstream>
-
+const int INF = 1000000;
 
 ZobristHashing::ZobristHashing(int numPieces) {
         std::random_device rd;
@@ -30,14 +28,70 @@ uint64_t ZobristHashing::getHash() const {
     return currentHash;
 }
 
-std::string Engine::search(std::stop_token stoken) {
-    while (!stoken.stop_requested() || mDepth != mCurrentDepth) {
+int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_token& stoken) {
+  if (stoken.stop_requested()) return 0;
+
+  if(depth == 0) {
+    return Engine::evaluate(pos);
+  }
+
+  auto moves = pos.getMoves();
+
+  if(moves.empty()) {
+    return -INF + (mDepth - depth);
+  }
+
+  int bestScore = -INF;
+
+  for(const auto& move : moves) {
+    pos.doMove(move);
+
+    int score = -negaMax(pos, depth -1, alpha, beta, stoken);
+    pos.undoMove(move);
+
+    if(score > bestScore) {
+      if(depth == mCurrentDepth) {
+      mLastBestMove = util::moveToString(move);
+      }
+    }
+
+    if(bestScore > alpha) {
+      alpha = bestScore;
+    }
+
+    if(alpha >= beta) {
+      break;
+    }
+  }
+
+  return bestScore;
+}
+
+std::string Engine::search(Position& pos, std::stop_token stoken) {
+    mLastBestMove = "0000";
+    mCurrentDepth = 1;
+    while (!stoken.stop_requested() && mCurrentDepth <= mDepth) {
         //search for best move
         //go through all moves
         //evaluate position
         //go to next depth and analyse best move for opponent and so on
+        int score = negaMax(pos, mCurrentDepth, -INF, INF, stoken);
+
+
+        if(stoken.stop_requested()) {
+          break;
+        }
+
+        mCurrentEval = score;
+        mCurrentDepth++;
     }
     return mLastBestMove;
+}
+
+int Engine::evaluate(Position& pos) {
+  int score = 0;
+
+  return (pos.mSideToMove == WHITE) ? score : -score;
 }
 
 void Engine::setDepth(int depth) {

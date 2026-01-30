@@ -1,6 +1,8 @@
 #ifndef ENGINE_HPP
 #define ENGINE_HPP
 
+#include "position.hpp"
+
 #include <string>
 #include <stdint.h>
 #include <iostream>
@@ -26,7 +28,9 @@ public:
     int getDepth();
 
     uint64_t mAlgebraicToBit(std::string alge);
-    std::string search(std::stop_token stoken);
+    std::string search(Position& pos, std::stop_token stoken);
+    int evaluate(Position& pos);
+    int negaMax(Position& pos, int depth, int alpha, int beta, std::stop_token& stoken);
 
     Engine();
     ~Engine();

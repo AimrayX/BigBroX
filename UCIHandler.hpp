@@ -4,6 +4,7 @@
 #include "game.hpp"
 
 #include <string>
+#include <thread>
 
 class UCIHandler {
 private:
