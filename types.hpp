@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 enum Square {
     A1, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
@@ -13,8 +14,8 @@ enum Square {
 };
 
 struct Move {
-    Square from;
-    Square to;
+    uint64_t from;
+    uint64_t to;
     char promotion;
 };
 

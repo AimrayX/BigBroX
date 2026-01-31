@@ -12,15 +12,17 @@ private:
  * returns the starting position as FEN + moves
  */
     std::string getStartingPosition();
+    std::atomic<Move> searchResult;
+
 public:
     Game game;
     int state;
     std::string lastCommand;
     std::string currentCommand;
 
-
     int loop();
-    void getEngineState(std::stop_token stoken);
+    void getEngineState();
+    std::string moveToString(Move move);
 
     UCIHandler(/* args */);
     ~UCIHandler();

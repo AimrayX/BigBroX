@@ -1,7 +1,6 @@
 #include "engine.hpp"
 
 #include "types.hpp"
-#include "attack.hpp"
 
 const int INF = 1000000;
 
@@ -35,7 +34,7 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
     return Engine::evaluate(pos);
   }
 
-  auto moves = pos.getMoves();
+  std::vector<Move> moves = pos.getMoves();
 
   if(moves.empty()) {
     return -INF + (mDepth - depth);
@@ -51,7 +50,7 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
 
     if(score > bestScore) {
       if(depth == mCurrentDepth) {
-      mLastBestMove = util::moveToString(move);
+      mLastBestMove = move; 
       }
     }
 
@@ -67,8 +66,8 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
   return bestScore;
 }
 
-std::string Engine::search(Position& pos, std::stop_token stoken) {
-    mLastBestMove = "0000";
+Move Engine::search(Position& pos, std::stop_token stoken) {
+    mLastBestMove = Move();
     mCurrentDepth = 1;
     while (!stoken.stop_requested() && mCurrentDepth <= mDepth) {
         //search for best move

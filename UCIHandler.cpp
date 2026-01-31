@@ -4,7 +4,6 @@
 #include <string>
 #include <thread>
 #include <stop_token>
-#include <chrono>
 
 #include "attack.hpp"
 
@@ -91,24 +90,31 @@ int UCIHandler::loop() {
         std::getline(std::cin, currentCommand);
     }
 
-    std::jthread t1([this](std::stop_token st) {game.engine.search(game.position, st);});
+    std::jthread t1([this](std::stop_token st) {this->searchResult = game.engine.search(game.position, st);});
 
     while (currentCommand != "stop") {
+        //print engine information
+        getEngineState();
         std::getline(std::cin, currentCommand);
     }
     t1.request_stop();
+
+    std::cout << "bestmove" << moveToString(searchResult) << std::endl;
   
     return 0;
 }
 
-void UCIHandler::getEngineState(std::stop_token stoken) {
-    while (!stoken.stop_requested()) {
-        std::cout << "info depth " << std::to_string(game.engine.mCurrentDepth.load()) << std::endl;
-        std::cout << "info score cp " << std::to_string(game.engine.mCurrentEval.load()) << std::endl;
-        std::cout << "info time " << std::to_string(game.engine.mTimeSpentMs.load()) << std::endl;
-    }
+void UCIHandler::getEngineState() {
+    std::cout << "info depth " << std::to_string(game.engine.mCurrentDepth.load()) << std::endl;
+    std::cout << "info score cp " << std::to_string(game.engine.mCurrentEval.load()) << std::endl;
+    std::cout << "info time " << std::to_string(game.engine.mTimeSpentMs.load()) << std::endl;
 }
 
+std::string UCIHandler::moveToString(Move move) {
+  std::string strMove = "";
+
+  return strMove;
+}
 
 UCIHandler::UCIHandler(/* args */) {
     state = 0;

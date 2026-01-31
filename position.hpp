@@ -3,7 +3,10 @@
 
 #include <stdint.h>
 #include <string>
+#include <vector>
+
 #include "types.hpp"
+
 
 class Position {
 
@@ -40,6 +43,8 @@ public:
     int setStartingPosition(std::string startingPosition);
     uint64_t getAllOccupiedSquares();
     void doMove(Move m);
+    void undoMove(Move m);
+    std::vector<Move> getMoves();
 
     Position(/* args */);
     ~Position();

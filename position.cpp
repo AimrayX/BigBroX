@@ -99,13 +99,13 @@ int Position::setStartingPosition(std::string startingPosition) {
 
 int Position::attackGeneration(Piece piece, int index) {
     uint64_t attack = 0;
-    if (piece | (Piece::W_ROOK | Piece::B_ROOK) == (mWhiteBishops | mBlackBishops)) {
+    if ((piece | (Piece::W_ROOK | Piece::B_ROOK)) == (mWhiteBishops | mBlackBishops)) {
         attack = attack::vertHorMask(index);
-    } else if (piece | (mWhiteBishops | mBlackBishops) == (mWhiteBishops | mBlackBishops)) {
+    } else if ((piece | (mWhiteBishops | mBlackBishops)) == (mWhiteBishops | mBlackBishops)) {
         attack = attack::diagonalMask(index);
-    } else if (piece | (mWhiteQueen | mBlackQueen) == (mWhiteQueen | mBlackQueen)) {
+    } else if ((piece | (mWhiteQueen | mBlackQueen)) == (mWhiteQueen | mBlackQueen)) {
         attack = attack::diagonalMask(index) | attack::vertHorMask(piece);
-    } else if (piece | (mWhiteKing | mBlackKing) == (mWhiteKing | mBlackKing)) {
+    } else if ((piece | (mWhiteKing | mBlackKing)) == (mWhiteKing | mBlackKing)) {
 
         attack = attack::kingAttacks[index];
     }
@@ -126,8 +126,17 @@ uint64_t getAllOccupiedSquares() {
 }
 
 void Position::doMove(Move m) {
-       
-    
+}
+
+void Position::undoMove(Move m) {
+
+
+}
+
+std::vector<Move> Position::getMoves() {
+
+
+  return;
 }
 
 Position::Position(/* args */) {

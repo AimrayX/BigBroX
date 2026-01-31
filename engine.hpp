@@ -3,6 +3,7 @@
 
 #include "position.hpp"
 
+#include <cstdint>
 #include <string>
 #include <stdint.h>
 #include <iostream>
@@ -22,13 +23,13 @@ public:
     std::atomic<int> mCurrentEval;
     std::atomic<unsigned long long> mTimeSpentMs;
 
-    std::string mLastBestMove;
+    Move mLastBestMove;
 
     void setDepth(int depth);
     int getDepth();
 
     uint64_t mAlgebraicToBit(std::string alge);
-    std::string search(Position& pos, std::stop_token stoken);
+    Move search(Position& pos, std::stop_token stoken);
     int evaluate(Position& pos);
     int negaMax(Position& pos, int depth, int alpha, int beta, std::stop_token& stoken);
 
