@@ -22,7 +22,6 @@ public:
 
     int loop();
     void getEngineState();
-    std::string moveToString(Move move);
 
     UCIHandler(/* args */);
     ~UCIHandler();

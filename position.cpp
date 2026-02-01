@@ -1,8 +1,8 @@
 #include "position.hpp"
 
-#include <iostream>
 #include <sstream>
 
+#include "types.hpp"
 #include "utils.hpp"
 #include "attack.hpp"
 
@@ -16,43 +16,43 @@ int Position::setStartingPosition(std::string startingPosition) {
             || startingPosition[i] == '2' || startingPosition[i] == '1') {
             i += startingPosition[i] - '0';
         } else if (startingPosition[i] == 'r') {
-            mBlackRooks |= 1 << realIndex;
-            board[realIndex] = Piece::B_ROOK;
+            pieces[BLACK][ROOK] |= 1 << realIndex;
+            occupancies[BLACK] |= pieces[BLACK][ROOK];
         } else if (startingPosition[i] == 'n') {
-            mBlackKnights |= 1 << realIndex;
-            board[realIndex] = Piece::B_KNIGHT;
+            pieces[BLACK][KNIGHT] |= 1 << realIndex;
+            occupancies[BLACK] |= pieces[BLACK][KNIGHT];
         } else if (startingPosition[i] == 'b') {
-            mBlackBishops |= 1 << realIndex;
-            board[realIndex] = Piece::B_BISHOP;
+            pieces[BLACK][BISHOP] |= 1 << realIndex;
+            occupancies[BLACK] |= pieces[BLACK][BISHOP];
         } else if (startingPosition[i] == 'q') {
-            mBlackQueen |= 1 << realIndex;
-            board[realIndex] = Piece::B_QUEEN;
+            pieces[BLACK][QUEEN] |= 1 << realIndex;
+            occupancies[BLACK] |= pieces[BLACK][QUEEN];
         } else if (startingPosition[i] == 'k') {
-            mBlackKing |= 1 << realIndex;
-            board[realIndex] = Piece::B_KING;
+            pieces[BLACK][KING] |= 1 << realIndex;
+            occupancies[BLACK] |= pieces[BLACK][KING];
         } else if (startingPosition[i] == 'p') {
-            mBlackPawns |= 1 << realIndex;
-            board[realIndex] = Piece::B_PAWN;
+            pieces[BLACK][PAWN] |= 1 << realIndex;
+            occupancies[BLACK] |= pieces[BLACK][PAWN];
         } else if (startingPosition[i] == 'R') {
-            mWhiteRooks |= 1 << realIndex;
-            board[realIndex] = Piece::W_ROOK;
+            pieces[WHITE][ROOK] |= 1 << realIndex;
+            occupancies[WHITE] |= pieces[WHITE][ROOK];
         } else if (startingPosition[i] == 'N') {
-            mWhiteKnights |= 1 << realIndex;
-            board[realIndex] = Piece::W_KNIGHT;
+            pieces[WHITE][KNIGHT] |= 1 << realIndex;
+            occupancies[WHITE] |= pieces[WHITE][KNIGHT];
         } else if (startingPosition[i] == 'B') {
-            mWhiteBishops |= 1 << realIndex;
-            board[realIndex] = Piece::W_BISHOP;
+            pieces[WHITE][BISHOP] |= 1 << realIndex;
+            occupancies[WHITE] |= pieces[WHITE][BISHOP];
         } else if (startingPosition[i] == 'Q') {
-            mWhiteQueen |= 1 << realIndex;
-            board[realIndex] = Piece::W_QUEEN;
+            pieces[WHITE][QUEEN] |= 1 << realIndex;
+            occupancies[WHITE] |= pieces[WHITE][QUEEN];
         } else if (startingPosition[i] == 'K') {
-            mWhiteKing |= 1 << realIndex;
-            board[realIndex] = Piece::W_KING;
+            pieces[WHITE][KING] |= 1 << realIndex;
+            occupancies[WHITE] |= pieces[WHITE][KING];
         } else if (startingPosition[i] == 'P') {
-            mWhitePawns |= 1 << realIndex;
-            board[realIndex] = Piece::W_PAWN;
+            pieces[WHITE][PAWN] |= 1 << realIndex;
+            occupancies[WHITE] |= pieces[WHITE][PAWN];
         }
-        
+      occupancies[2] |= occupancies[BLACK] | occupancies[WHITE];
     }
     std::istringstream iss(startingPosition);
     std::string temp;
@@ -97,28 +97,30 @@ int Position::setStartingPosition(std::string startingPosition) {
     return 0;
 }
 
-int Position::attackGeneration(Piece piece, int index) {
+int Position::attackGeneration(uint64_t piece) {
     uint64_t attack = 0;
-    if ((piece | (Piece::W_ROOK | Piece::B_ROOK)) == (mWhiteBishops | mBlackBishops)) {
-        attack = attack::vertHorMask(index);
-    } else if ((piece | (mWhiteBishops | mBlackBishops)) == (mWhiteBishops | mBlackBishops)) {
-        attack = attack::diagonalMask(index);
-    } else if ((piece | (mWhiteQueen | mBlackQueen)) == (mWhiteQueen | mBlackQueen)) {
-        attack = attack::diagonalMask(index) | attack::vertHorMask(piece);
-    } else if ((piece | (mWhiteKing | mBlackKing)) == (mWhiteKing | mBlackKing)) {
-
-        attack = attack::kingAttacks[index];
+    if ((piece & pieces[BLACK][ROOK]) || (piece & pieces[WHITE][BISHOP]) != 0) {
+        attack = attack::vertHorMask(piece);
+    } else if ((piece & pieces[BLACK][BISHOP]) || (piece & pieces[WHITE][BISHOP]) != 0) {
+        attack = attack::diagonalMask(piece);
+    } else if ((piece & pieces[BLACK][QUEEN]) || (piece & pieces[WHITE][QUEEN]) != 0) {
+        attack = (attack::diagonalMask(piece) | attack::vertHorMask(piece));
+    } else if ((piece & pieces[BLACK][KING]) || (piece & pieces[WHITE][KING]) != 0) {
+        attack = attack::kingAttacks[piece];
     }
-    
     return attack;
 }
 
 int Position::getPseudoLegalMoves(uint64_t piece) {
+  uint64_t pseudoLegalMoves = 0;
+  pseudoLegalMoves = attackGeneration(piece);
 
+
+  return pseudoLegalMoves;
 }
 
 int Position::filterLegalMoves(uint64_t piece) {
-
+  
 }
 
 uint64_t getAllOccupiedSquares() {
@@ -133,10 +135,19 @@ void Position::undoMove(Move m) {
 
 }
 
-std::vector<Move> Position::getMoves() {
+std::vector<Move> Position::getMoves(Color color) {
+  std::vector<Move> moves;
+  for(int i = 0; i < 6; i++) {
+    uint64_t piece = pieces[color][i];
+    while(piece) {
+    int square = __builtin_ctzll(piece);
+    Position::getPseudoLegalMoves(square);
 
 
-  return;
+    piece &= (piece -1);
+    }
+  }
+  return moves;
 }
 
 Position::Position(/* args */) {

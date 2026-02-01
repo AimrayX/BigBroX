@@ -6,6 +6,7 @@
 #include <stop_token>
 
 #include "attack.hpp"
+#include "types.hpp"
 
 std::string UCIHandler::getStartingPosition() {
     lastCommand = currentCommand;
@@ -98,8 +99,8 @@ int UCIHandler::loop() {
         std::getline(std::cin, currentCommand);
     }
     t1.request_stop();
-
-    std::cout << "bestmove" << moveToString(searchResult) << std::endl;
+    Move finalMove = searchResult.load();
+    std::cout << "bestmove " << Squares.at(finalMove.to) << std::endl;
   
     return 0;
 }
@@ -108,12 +109,6 @@ void UCIHandler::getEngineState() {
     std::cout << "info depth " << std::to_string(game.engine.mCurrentDepth.load()) << std::endl;
     std::cout << "info score cp " << std::to_string(game.engine.mCurrentEval.load()) << std::endl;
     std::cout << "info time " << std::to_string(game.engine.mTimeSpentMs.load()) << std::endl;
-}
-
-std::string UCIHandler::moveToString(Move move) {
-  std::string strMove = "";
-
-  return strMove;
 }
 
 UCIHandler::UCIHandler(/* args */) {
