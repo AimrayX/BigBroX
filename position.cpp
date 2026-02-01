@@ -1,5 +1,6 @@
 #include "position.hpp"
 
+#include <cstdint>
 #include <sstream>
 
 #include "types.hpp"
@@ -68,7 +69,7 @@ int Position::setStartingPosition(std::string startingPosition) {
     }
 
     std::getline(iss, temp, ' ');
-    for (int i = 0; i < temp.length(); i++)
+    for (size_t i = 0; i < temp.length(); i++)
     {
         if (temp[i] == 'K') {
             mCastleRight = WHITE_OO;
@@ -97,34 +98,26 @@ int Position::setStartingPosition(std::string startingPosition) {
     return 0;
 }
 
-int Position::attackGeneration(uint64_t piece) {
+uint64_t Position::attackGeneration(int square, int type, Color color) {
     uint64_t attack = 0;
-    if ((piece & pieces[BLACK][ROOK]) || (piece & pieces[WHITE][BISHOP]) != 0) {
-        attack = attack::vertHorMask(piece);
-    } else if ((piece & pieces[BLACK][BISHOP]) || (piece & pieces[WHITE][BISHOP]) != 0) {
-        attack = attack::diagonalMask(piece);
-    } else if ((piece & pieces[BLACK][QUEEN]) || (piece & pieces[WHITE][QUEEN]) != 0) {
-        attack = (attack::diagonalMask(piece) | attack::vertHorMask(piece));
-    } else if ((piece & pieces[BLACK][KING]) || (piece & pieces[WHITE][KING]) != 0) {
-        attack = attack::kingAttacks[piece];
+    if (type == ROOK) {
+        attack = attack::getRookAttacks(square, occupancies[2]);
+    } else if (type == BISHOP) {
+        attack = attack::getBishopAttacks(square, occupancies[2]);
+    } else if (type == QUEEN) {
+        attack = (attack::getRookAttacks(square, occupancies[2]) | attack::getBishopAttacks(square, occupancies[2]));
+    } else if (type == KING) {
+        attack = attack::kingAttacks[square];
+    } else if (type == KNIGHT) {
+        attack = attack::knightAttacks[square];
+    } else {
+        attack = attack::getPawnAttacks(square, color, occupancies[~color]);
     }
     return attack;
 }
 
-int Position::getPseudoLegalMoves(uint64_t piece) {
-  uint64_t pseudoLegalMoves = 0;
-  pseudoLegalMoves = attackGeneration(piece);
-
-
-  return pseudoLegalMoves;
-}
-
-int Position::filterLegalMoves(uint64_t piece) {
-  
-}
-
-uint64_t getAllOccupiedSquares() {
-    
+uint64_t Position::getPseudoLegalMoves(uint64_t square, int type, Color color) {
+  return (attackGeneration(square, type, color) & ~occupancies[color]);
 }
 
 void Position::doMove(Move m) {
@@ -132,22 +125,30 @@ void Position::doMove(Move m) {
 
 void Position::undoMove(Move m) {
 
-
 }
 
-std::vector<Move> Position::getMoves(Color color) {
-  std::vector<Move> moves;
+void Position::getMoves(Color color, std::vector<Move>& moveList) {
   for(int i = 0; i < 6; i++) {
     uint64_t piece = pieces[color][i];
     while(piece) {
-    int square = __builtin_ctzll(piece);
-    Position::getPseudoLegalMoves(square);
+      int sourceSquare = __builtin_ctzll(piece);
+      uint64_t validTargets = getPseudoLegalMoves(sourceSquare, i, color);
 
-
-    piece &= (piece -1);
+      while(validTargets) {
+        int targetSquare = __builtin_ctzll(validTargets);
+        if(i == PAWN && (targetSquare/8) == ((color == WHITE) ? 7 : 0)) {
+          moveList.push_back(Move(sourceSquare, targetSquare, QUEEN));
+          moveList.push_back(Move(sourceSquare, targetSquare, KNIGHT));
+          moveList.push_back(Move(sourceSquare, targetSquare, BISHOP));
+          moveList.push_back(Move(sourceSquare, targetSquare, ROOK));
+        } else {
+          moveList.push_back(Move(sourceSquare, targetSquare, NOPIECE));
+        }
+        validTargets &= (validTargets - 1);
+      }
+      piece &= (piece - 1);
     }
   }
-  return moves;
 }
 
 Position::Position(/* args */) {

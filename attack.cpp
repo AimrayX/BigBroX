@@ -1,4 +1,5 @@
 #include "attack.hpp"
+#include "types.hpp"
 #include <cstdint>
 
 void attack::computeKnightAttacks() {
@@ -152,6 +153,18 @@ void attack::initRays() {
   }
 }
 
+void attack::initPawnAttacks() {
+  for(int sq = 0; sq < 64; sq++) {
+    if (sq % 8 != 0) pawnAttacks[WHITE][sq] |= (1ULL << (sq + 7));
+    if (sq % 8 != 7) pawnAttacks[WHITE][sq] |= (1ULL << (sq + 9));
+  }
+
+  for (int sq = 0; sq < 64; sq++) {
+    if (sq % 8 != 7) pawnAttacks[BLACK][sq] |= (1ULL << (sq - 7));
+    if (sq % 8 != 0) pawnAttacks[BLACK][sq] |= (1ULL << (sq - 9));
+  }
+}
+
 uint64_t attack::getBishopAttacks(int square, uint64_t occupancy) {
   uint64_t attacks = 0ULL;
 
@@ -253,20 +266,48 @@ uint64_t attack::getRookAttacks(int square, uint64_t occupancy) {
 }
 
 uint64_t attack::getQueenAttacks(int square, uint64_t occupancy) {
-
   return (attack::getRookAttacks(square, occupancy) | attack::getBishopAttacks(square, occupancy));
 }
 
+uint64_t attack::getPawnAttacks(int square, Color color, uint64_t occupancy) {
+  uint64_t attacks = 0ULL;
+  
+  int direction = (color == WHITE) ? 8 : -8;
+  int startRank = (color == WHITE) ? 1 : 6;
+
+  int target = square + direction;
+
+  if(!(occupancy & (1ULL << target))) {
+    attacks |= (1ULL << target);
+    if((square / 8) == startRank && !(occupancy & (1ULL << (square + (direction * 2))))) {
+      attacks |= (1ULL << (direction * 2));
+    } 
+  }
+
+  uint64_t attackingSquares = pawnAttacks[color][square];
+
+  attackingSquares &= occupancy;
+
+  while(attackingSquares) {
+    int capture_sq = __builtin_ctzll(attackingSquares);
+    attacks |= capture_sq;
+    attackingSquares &= (attackingSquares - 1);
+  }
+
+  return attacks;
+}
 
 namespace attack {
     uint64_t knightAttacks[64];
     uint64_t kingAttacks[64];
     uint64_t Rays[8][64];
+    uint64_t pawnAttacks[2][64];
 }
 
 void attack::init() {
     computeKnightAttacks();
     computeKingAttacks();
     initRays();
+    initPawnAttacks();
 }
 

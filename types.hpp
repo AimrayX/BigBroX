@@ -7,11 +7,11 @@
 struct Move {
     uint64_t from;
     uint64_t to;
-    char promotion;
+    uint8_t promotion;
 };
 
 enum Piece {
-    PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING
+    PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NOPIECE
 };
 
 enum CastlingRights {

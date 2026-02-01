@@ -28,14 +28,12 @@ public:
     uint64_t pieces[2][6];
     uint64_t occupancies[3];
 
-    int attackGeneration(uint64_t index);
-    int getPseudoLegalMoves(uint64_t piece);
-    int filterLegalMoves(uint64_t piece);
+    uint64_t attackGeneration(int square, int type, Color color);
+    uint64_t getPseudoLegalMoves(uint64_t piece, int type, Color color);
     int setStartingPosition(std::string startingPosition);
-    uint64_t getAllOccupiedSquares();
     void doMove(Move m);
     void undoMove(Move m);
-    std::vector<Move> getMoves(Color color);
+    void getMoves(Color color, std::vector<Move>& moveList);
 
     Position(/* args */);
     ~Position();
