@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string_view>
 #include <array>
+#include <unordered_map>
 
 enum Piece {
     PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NOPIECE
@@ -51,3 +52,4 @@ inline constexpr std::array<std::string_view, 64> Squares = {
     "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
 };
+

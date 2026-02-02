@@ -5,6 +5,7 @@
 #include <thread>
 #include <stop_token>
 #include <sstream>
+#include <unordered_map>
 
 #include "attack.hpp"
 #include "types.hpp"
@@ -32,53 +33,78 @@ std::string UCIHandler::getStartingPosition(std::string commandLine) {
 }
 
 int UCIHandler::loop() {
-    //start
-    std::cout << "Waiting for gui to start engine..." << std::endl;
-    while (currentCommand != "uci") {
-        std::getline(std::cin, currentCommand);
-    }
-    std::cout << "id name BigBroX\nid author Hall T.\noption name Hash type spin default 16 min 1 max 1024\nuciok" << std::endl;
-    
-    lastCommand = currentCommand;
-    while (currentCommand != "isready") {
-        std::getline(std::cin, currentCommand);
-    }
-    
-    attack::init();
+    static const std::unordered_map<std::string, UCICommand> commandMap = {
+      {"uci",        UCICommand::Uci},
+      {"isready",    UCICommand::IsReady},
+      {"setoption",  UCICommand::SetOption},
+      {"ucinewgame", UCICommand::UCINewGame},
+      {"position",   UCICommand::Position},
+      {"go",         UCICommand::Go},
+      {"stop",       UCICommand::Stop},
+      {"quit",       UCICommand::Quit}
+    };
 
-    std::cout << "readyok" << std::endl;
+  std::string line;
+  std::string token;
+  while(std::getline(std::cin, line)) {
 
-    std::getline(std::cin, currentCommand);
-  while(
-    if (currentCommand[0] == 's') {
-        //handle later
-    } else if (currentCommand[0] == 'p') {
-        std::cout << "info setting starting position" << std::endl;
-        std::string startingPosition = getStartingPosition(currentCommand);
-        std::cout << "here" << std::endl;
-        game.position.setStartingPosition(startingPosition);
-    }
-    std::cout << "info starting position set" << std::endl;
-    while (currentCommand[0] != 'g') {
-        std::getline(std::cin, currentCommand);
-    }
-    std::cout << "info starting calculations" << std::endl;
-    std::jthread t1([this](std::stop_token st) {this->searchResult = game.engine.search(game.position, st);});
+    std::stringstream ss(line);
 
-    while (currentCommand != "stop") {
-        //print engine information
-        std::cout << "// INFO //" << std::endl;
-        std::getline(std::cin, currentCommand);
-    }
-    std::cout << "info stopping engine" << std::endl;
-    t1.request_stop();
-    std::cout << "info engine stopped retrieving best move" << std::endl;
-    Move finalMove = searchResult.load();
-    std::cout << "info retrieved search result " << finalMove.to << std::endl;
-    
-    if(finalMove.to < Squares.size()) std::cout << "bestmove " << Squares.at(finalMove.to) << std::endl;
+    if(ss >> token) {
+
+      auto it = commandMap.find(token);
+
+      if (it != commandMap.end()) {
   
-    return 0;
+        switch(it->second) {
+          case UCICommand::Uci:
+            std::cout << "id name BigBroX\nid author Hall T.\noption name Hash type spin default 16 min 1 max 1024\nuciok" << std::endl;
+            break;
+
+          case UCICommand::IsReady:
+            attack::init();
+            std::cout << "readyok" << std::endl;
+            break;
+
+          case UCICommand::Position: {
+            std::cout << "info setting starting position" << std::endl;
+            std::string startingPosition = getStartingPosition(line);
+            game.position.setStartingPosition(startingPosition);
+            break;
+          }
+
+          case UCICommand::Go: {
+            std::cout << "info starting calculations" << std::endl;
+
+            if (t1.joinable()) t1.request_stop();
+
+            t1 = std::jthread([this](std::stop_token st) {this->searchResult = game.engine.search(game.position, st);});
+            break;
+          }
+
+          case UCICommand::Stop: {
+            std::cout << "info stopping engine" << std::endl;
+            t1.request_stop();
+
+            if(t1.joinable()) t1.join();
+
+            std::cout << "info engine stopped retrieving best move" << std::endl;
+            Move finalMove = searchResult.load();
+
+
+            std::cout << "info retrieved search result " << finalMove.to << std::endl;
+            if(finalMove.to < Squares.size()) std::cout << "bestmove " << Squares.at(finalMove.to) << std::endl;
+            break;
+          }
+
+          case UCICommand::Quit:
+            std::cout << "quitting" << std::endl;
+            return 0;
+        }
+      } else { std::cout << "unknown command" << std::endl; return -1; }
+    }
+  }
+  return 0;
 }
 
 void UCIHandler::getEngineState() {

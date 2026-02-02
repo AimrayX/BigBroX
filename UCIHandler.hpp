@@ -6,6 +6,18 @@
 #include <string>
 #include <thread>
 
+enum class UCICommand {
+  Uci,
+  IsReady,
+  SetOption,
+  UCINewGame,
+  Position,
+  Go,
+  Stop,
+  Quit,
+  Unknown
+};
+
 class UCIHandler {
 private:
 /**
@@ -13,6 +25,7 @@ private:
  */
     std::string getStartingPosition(std::string commandLine);
     std::atomic<Move> searchResult;
+    std::jthread t1;
 
 public:
     Game game;
