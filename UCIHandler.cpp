@@ -76,6 +76,10 @@ int UCIHandler::loop() {
             std::cout << "info starting calculations" << std::endl;
 
             if (t1.joinable()) t1.request_stop();
+            ss >> token;
+            ss >> token;
+            std::cout << "info searching for depth: " << token << std::endl;
+            game.engine.setDepth(std::stoi(token));
 
             t1 = std::jthread([this](std::stop_token st) {this->searchResult = game.engine.search(game.position, st);});
             break;

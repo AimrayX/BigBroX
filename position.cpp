@@ -60,7 +60,6 @@ int Position::setStartingPosition(std::string startingPosition) {
 
     occupancies[2] = occupancies[WHITE] | occupancies[BLACK];
 
-    // Continue with the rest of the parsing (Side to move, castling, etc.)
     std::string temp;
 
     if (std::getline(iss, temp, ' ')) {
@@ -268,6 +267,29 @@ void Position::doMove(Move m) {
     occupancies[BLACK] = pieces[BLACK][PAWN] | pieces[BLACK][KNIGHT] | pieces[BLACK][BISHOP] | pieces[BLACK][QUEEN] | pieces[BLACK][KING] | pieces[BLACK][ROOK];
     occupancies[2] = occupancies[WHITE] | occupancies[BLACK];
 
+    // --- UPDATE CASTLING RIGHTS ---
+    // 1. If King moves, lose both rights
+    if (state.movedPiece == KING) {
+        if (mSideToMove == BLACK) mCastleRight &= ~(WHITE_OO | WHITE_OOO); 
+        else                      mCastleRight &= ~(BLACK_OO | BLACK_OOO);
+    }
+
+    // 2. If Rook moves, lose rights for that side
+    if (state.movedPiece == ROOK) {
+        if (m.from == 0)       mCastleRight &= ~WHITE_OOO;
+        else if (m.from == 7)  mCastleRight &= ~WHITE_OO;
+        else if (m.from == 56) mCastleRight &= ~BLACK_OOO;
+        else if (m.from == 63) mCastleRight &= ~BLACK_OO;
+    }
+
+    // 3. If Rook is captured, opponent loses rights for that side
+    if (state.capturedPiece == ROOK) {
+        if (m.to == 0)       mCastleRight &= ~WHITE_OOO;
+        else if (m.to == 7)  mCastleRight &= ~WHITE_OO;
+        else if (m.to == 56) mCastleRight &= ~BLACK_OOO;
+        else if (m.to == 63) mCastleRight &= ~BLACK_OO;
+    }
+
     history.push_back(state);
 }
 
@@ -328,11 +350,18 @@ void Position::undoMove(Move m) {
 }
 
 void Position::getMoves(Color color, std::vector<Move>& moveList) {
+  Color enemy = (color == WHITE) ? BLACK : WHITE;
+  uint64_t enemyKing = pieces[enemy][KING];
+  if (enemyKing == 0) {
+    std::cout << "CRITICAL ERROR: Enemy King missing for color " << enemy << std::endl;
+  }
+
   for(int i = 0; i < 6; i++) {
     uint64_t piece = pieces[color][i];
     while(piece) {
       int sourceSquare = __builtin_ctzll(piece);
       uint64_t validTargets = getPseudoLegalMoves(sourceSquare, i, color);
+      validTargets &= ~enemyKing;
 
       while(validTargets) {
         int targetSquare = __builtin_ctzll(validTargets);
@@ -349,6 +378,55 @@ void Position::getMoves(Color color, std::vector<Move>& moveList) {
       piece &= (piece - 1);
     }
   }
+  if (color == WHITE) {
+        // --- WHITE SHORT CASTLING (Kingside) ---
+        // Checks: Right exists AND f1(5), g1(6) are empty
+        if ((mCastleRight & WHITE_OO) && 
+            !(occupancies[2] & ((1ULL << 5) | (1ULL << 6)))) {
+            // Checks: King(e1) not in check, f1 not attacked, g1 not attacked
+            if (!isSquareAttacked(4, BLACK) && 
+                !isSquareAttacked(5, BLACK) && 
+                !isSquareAttacked(6, BLACK)) {
+                moveList.push_back(Move(4, 6, NOPIECE)); // e1g1
+            }
+        }
+
+        // --- WHITE LONG CASTLING (Queenside) ---
+        // Checks: Right exists AND b1(1), c1(2), d1(3) are empty
+        if ((mCastleRight & WHITE_OOO) && 
+            !(occupancies[2] & ((1ULL << 1) | (1ULL << 2) | (1ULL << 3)))) {
+            // Checks: King(e1) not in check, d1 not attacked, c1 not attacked
+            // Note: b1 does not need to be safe, only empty.
+            if (!isSquareAttacked(4, BLACK) && 
+                !isSquareAttacked(3, BLACK) && 
+                !isSquareAttacked(2, BLACK)) {
+                moveList.push_back(Move(4, 2, NOPIECE)); // e1c1
+            }
+        }
+    } 
+    else {
+        // --- BLACK SHORT CASTLING (Kingside) ---
+        // Checks: Right exists AND f8(61), g8(62) are empty
+        if ((mCastleRight & BLACK_OO) && 
+            !(occupancies[2] & ((1ULL << 61) | (1ULL << 62)))) {
+            if (!isSquareAttacked(60, WHITE) && 
+                !isSquareAttacked(61, WHITE) && 
+                !isSquareAttacked(62, WHITE)) {
+                moveList.push_back(Move(60, 62, NOPIECE)); // e8g8
+            }
+        }
+
+        // --- BLACK LONG CASTLING (Queenside) ---
+        // Checks: Right exists AND b8(57), c8(58), d8(59) are empty
+        if ((mCastleRight & BLACK_OOO) && 
+            !(occupancies[2] & ((1ULL << 57) | (1ULL << 58) | (1ULL << 59)))) {
+            if (!isSquareAttacked(60, WHITE) && 
+                !isSquareAttacked(59, WHITE) && 
+                !isSquareAttacked(58, WHITE)) {
+                moveList.push_back(Move(60, 58, NOPIECE)); // e8c8
+            }
+        }
+    }
 }
 
 void Position::printBoard() {

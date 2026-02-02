@@ -427,6 +427,7 @@ CMakeFiles/chess_engine.dir/engine.cpp.o: /home/aimray/Projects/BigBroX/engine.c
   /home/aimray/Projects/BigBroX/engine.hpp \
   /home/aimray/Projects/BigBroX/position.hpp \
   /home/aimray/Projects/BigBroX/types.hpp \
+  /home/aimray/Projects/BigBroX/utils.hpp \
   /usr/include/alloca.h \
   /usr/include/asm-generic/bitsperlong.h \
   /usr/include/asm-generic/errno-base.h \
@@ -1805,11 +1806,11 @@ CMakeFiles/chess_engine.dir/engine.cpp.o:
 
 /home/aimray/Projects/BigBroX/utils.cpp:
 
-/home/aimray/Projects/BigBroX/utils.hpp:
-
 /home/aimray/Projects/BigBroX/position.cpp:
 
 /home/aimray/Projects/BigBroX/main.cpp:
+
+/home/aimray/Projects/BigBroX/utils.hpp:
 
 /home/aimray/Projects/BigBroX/attack.cpp:
 

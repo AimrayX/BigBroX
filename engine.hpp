@@ -41,12 +41,19 @@ public:
 
     Move mLastBestMove;
 
+    // PV Table Constants
+    static const int MAX_PLY = 64;
+    // The Table: pvTable[ply][0] is the best move at that ply
+    Move pvTable[MAX_PLY][MAX_PLY]; 
+    int pvLength[MAX_PLY];
+
     void setDepth(int depth);
     int getDepth();
 
     uint64_t mAlgebraicToBit(std::string alge);
     Move search(Position& pos, std::stop_token stoken);
     int evaluate(Position& pos);
+    int quiescence(Position& pos, int alpha, int beta);
     int negaMax(Position& pos, int depth, int alpha, int beta, std::stop_token& stoken);
 
     ZobristHashing zobristHashing;

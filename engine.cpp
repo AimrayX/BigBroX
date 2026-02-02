@@ -1,8 +1,7 @@
 #include "engine.hpp"
 
 #include "types.hpp"
-#include <cstdlib>
-
+#include "utils.hpp"
 
 const int INF = 1000000;
 
@@ -29,11 +28,56 @@ uint64_t ZobristHashing::getHash() const {
     return currentHash;
 }
 
+int Engine::quiescence(Position& pos, int alpha, int beta) {
+    // 1. Stand Pat: Assess the static evaluation of the current position.
+    // If we don't capture anything else, is this position already good enough?
+    int stand_pat = evaluate(pos);
+
+    // 2. Pruning: If the static position is already better than beta, stop.
+    if (stand_pat >= beta) {
+        return beta;
+    }
+
+    // 3. Update Alpha: If standing pat is better than alpha, raise alpha.
+    if (stand_pat > alpha) {
+        alpha = stand_pat;
+    }
+
+    // 4. Generate Moves
+    std::vector<Move> moveList;
+    pos.getMoves(pos.mSideToMove, moveList);
+
+    // 5. Loop through ONLY CAPTURES
+    for (const auto& move : moveList) {
+        // --- FILTER: ONLY CAPTURES ---
+        // We check if the destination square has an enemy piece.
+        // (Note: This is a simplified check. En Passant needs special handling but this covers 99% of cases)
+        Color enemy = (pos.mSideToMove == WHITE) ? BLACK : WHITE;
+        if (pos.occupancies[enemy] & (1ULL << move.to)) {
+            pos.doMove(move);
+            // Recursively call quiescence
+            int score = -quiescence(pos, -beta, -alpha);
+            pos.undoMove(move);
+
+            if (score >= beta) {
+                return beta;
+            }
+            if (score > alpha) {
+                alpha = score;
+            }
+        }
+    }
+    return alpha;
+}
+
 int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_token& stoken) {
   if (stoken.stop_requested()) return 0;
 
+  int ply = mCurrentDepth -depth;
+  pvLength[ply] = ply;
+
   if(depth == 0) {
-    return Engine::evaluate(pos);
+    return quiescence(pos, alpha, beta);
   }
 
   std::vector<Move> moveList;
@@ -42,13 +86,8 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
   int movesSearched = 0;
 
   for(const auto& move : moveList) {
-    std::cout << "\nbefore Move" << std::endl;
-    pos.printBoard();
 
     pos.doMove(move);
-
-    std::cout << "\nafter Move" << std:: endl;
-    pos.printBoard();
 
     Color sideJustMoved = (pos.mSideToMove == WHITE) ? BLACK : WHITE;
     int kingSquare = __builtin_ctzll(pos.pieces[sideJustMoved][KING]);
@@ -60,18 +99,27 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
 
     movesSearched++;
 
-    int score = -negaMax(pos, depth -1, -alpha, -beta, stoken);
+    int score = -negaMax(pos, depth -1, -beta, -alpha, stoken);
     pos.undoMove(move);
+
+    if(stoken.stop_requested()) return 0;
 
     if(score > bestScore) {
       if(depth == mCurrentDepth) {
-      mLastBestMove = move; 
+        mLastBestMove = move; 
       }
       bestScore = score;
-    }
 
-    if(bestScore > alpha) {
-      alpha = bestScore;
+      if(score > alpha) {
+        alpha = score;
+        pvTable[ply][ply] = move;
+
+        int nextPly = ply + 1;
+        for(int i = nextPly; i < pvLength[nextPly]; i++) {
+          pvTable[ply][i] = pvTable[nextPly][i];
+        }
+        pvLength[ply] = pvLength[nextPly];
+      }
     }
 
     if(alpha >= beta) {
@@ -99,6 +147,13 @@ Move Engine::search(Position& pos, std::stop_token stoken) {
     while (!stoken.stop_requested() && mCurrentDepth <= mDepth) {
         int score = negaMax(pos, mCurrentDepth, -INF, INF, stoken);
 
+        // Print PV
+        std::cout << "info depth " << mCurrentDepth << " score cp " << score << " pv";
+        for (int i = 0; i < pvLength[0]; i++) {
+          Move m = pvTable[0][i];
+          std::cout << " " << util::squareToString(m.from) << util::squareToString(m.to);
+        }
+        std::cout << std::endl;
 
         if(stoken.stop_requested()) {
           break;
@@ -106,9 +161,6 @@ Move Engine::search(Position& pos, std::stop_token stoken) {
 
         mCurrentEval = score;
         mCurrentDepth++;
-        std::cout << "info depth " << std::to_string(mCurrentDepth) << std::endl;
-        std::cout << "info score cp " << std::to_string(mCurrentEval) << std::endl;
-        std::cout << "info time " << std::to_string(mTimeSpentMs) << std::endl;
     }
     std::cout << "search end" << std::endl;
     return mLastBestMove;
