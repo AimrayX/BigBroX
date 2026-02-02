@@ -21,7 +21,7 @@ public:
     Color mSideToMove;
     CastlingRights mCastleRight;
 
-    std::string mEnPassentSquare;
+    uint64_t mEnPassentSquare;
     int mHalfMove;
     int mFullMove;
 
@@ -31,7 +31,7 @@ public:
     std::vector<StateInfo> history;
 
     uint64_t attackGeneration(int square, int type, Color color);
-    uint64_t getPseudoLegalMoves(uint64_t piece, int type, Color color);
+    uint64_t getPseudoLegalMoves(int piece, int type, Color color);
     int setStartingPosition(std::string startingPosition);
     void doMove(Move m);
     void undoMove(Move m);

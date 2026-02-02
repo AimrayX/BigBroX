@@ -1,6 +1,7 @@
 #include "engine.hpp"
 
 #include "types.hpp"
+#include <cstdlib>
 
 
 const int INF = 1000000;
@@ -70,12 +71,15 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
 Move Engine::search(Position& pos, std::stop_token stoken) {
     mLastBestMove = Move();
     mCurrentDepth = 1;
+    std::cout << "in search" << std::endl;
     while (!stoken.stop_requested() && mCurrentDepth <= mDepth) {
         //search for best move
         //go through all moves
         //evaluate position
         //go to next depth and analyse best move for opponent and so on
+        std::cout << "before negaMax" << std::endl;
         int score = negaMax(pos, mCurrentDepth, -INF, INF, stoken);
+        std::cout << "after negaMax" << std::endl;
 
 
         if(stoken.stop_requested()) {
@@ -84,12 +88,16 @@ Move Engine::search(Position& pos, std::stop_token stoken) {
 
         mCurrentEval = score;
         mCurrentDepth++;
+        std::cout << "info depth " << std::to_string(mCurrentDepth) << std::endl;
+        std::cout << "info score cp " << std::to_string(mCurrentEval) << std::endl;
+        std::cout << "info time " << std::to_string(mTimeSpentMs) << std::endl;
     }
+    std::cout << "search end" << std::endl;
     return mLastBestMove;
 }
 
 int Engine::evaluate(Position& pos) {
-  int score = 0;
+  int score = std::rand() % 101;
 
   return (pos.mSideToMove == WHITE) ? score : -score;
 }
@@ -103,7 +111,10 @@ int Engine::getDepth() {
 }
 
 Engine::Engine() {
-    ZobristHashing zobrist;
+  mCurrentDepth = 0;
+  mCurrentEval = 0;
+  mDepth = 0;
+  mTimeSpentMs = 0;
 }
 
 Engine::~Engine() {

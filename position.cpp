@@ -83,7 +83,7 @@ int Position::setStartingPosition(std::string startingPosition) {
     }
 
     std::getline(iss, temp, ' ');
-    mEnPassentSquare = temp;
+    mEnPassentSquare = util::mAlgebraicToBit(temp);
     
     std::getline(iss, temp, ' ');
     mHalfMove = std::stoi(temp);
@@ -116,7 +116,7 @@ uint64_t Position::attackGeneration(int square, int type, Color color) {
     return attack;
 }
 
-uint64_t Position::getPseudoLegalMoves(uint64_t square, int type, Color color) {
+uint64_t Position::getPseudoLegalMoves(int square, int type, Color color) {
   return (attackGeneration(square, type, color) & ~occupancies[color]);
 }
 
@@ -129,7 +129,7 @@ void Position::doMove(Move m) {
   state.capturedPiece = NOPIECE;
   state.movedPiece = NOPIECE;
 
-  uint64_t piece = m.from;
+  uint64_t piece = (1ULL << m.from);
   
   if (piece & pieces[mSideToMove][ROOK]) {
     pieces[mSideToMove][ROOK] &= ~piece;
@@ -159,7 +159,7 @@ void Position::doMove(Move m) {
     state.promotionSquare = m.to;
   }
 
-  piece = m.to;
+  piece = (1ULL << m.to);
   mSideToMove = ((mSideToMove == WHITE) ? BLACK : WHITE);
 
   if (piece & pieces[mSideToMove][ROOK]) {
@@ -194,20 +194,20 @@ void Position::undoMove(Move m) {
   mHalfMove = oldState.halfMove;
 
   if(oldState.capturedPiece != NOPIECE) {
-    pieces[mSideToMove][oldState.capturedPiece] |= m.to;
+    pieces[mSideToMove][oldState.capturedPiece] |= (1ULL << m.to);
   }
 
   mSideToMove = ((mSideToMove == WHITE) ? BLACK : WHITE);
 
   if(m.promotion != NOPIECE) {
-    pieces[mSideToMove][oldState.movedPiece] &= ~m.to;
-    pieces[mSideToMove][oldState.movedPiece] |= m.from;
+    pieces[mSideToMove][oldState.movedPiece] &= ~(1ULL << m.to);
+    pieces[mSideToMove][oldState.movedPiece] |= (1ULL << m.from);
   } else {
-    pieces[mSideToMove][oldState.promotedToPiece] &= ~oldState.promotionSquare;
+    pieces[mSideToMove][oldState.promotedToPiece] &= ~(1ULL << oldState.promotionSquare);
     if(mSideToMove) {
-      pieces[mSideToMove][PAWN] |= (oldState.promotionSquare << 8);
+      pieces[mSideToMove][PAWN] |= ((1ULL << oldState.promotionSquare) << 8);
     } else {
-      pieces[mSideToMove][PAWN] |= (oldState.promotionSquare >> 8);
+      pieces[mSideToMove][PAWN] |= ((1ULL << oldState.promotionSquare) >> 8);
     }
   }
 }

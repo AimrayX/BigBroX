@@ -1,5 +1,4 @@
-#ifndef ENGINE_HPP
-#define ENGINE_HPP
+#pragma once
 
 #include "position.hpp"
 
@@ -12,6 +11,23 @@
 #include <random>
 #include <stop_token>
 #include <atomic>
+
+class ZobristHashing {
+private:
+    std::unordered_map<int, std::vector<uint64_t>> pieceHashes;
+    uint64_t currentHash;
+
+public:
+    ZobristHashing(int numPieces);
+
+    void movePiece(int piece, int from, int to);
+
+    uint64_t getHash() const;
+
+    ZobristHashing();
+    ~ZobristHashing();
+};
+
 
 class Engine
 {
@@ -32,27 +48,10 @@ public:
     Move search(Position& pos, std::stop_token stoken);
     int evaluate(Position& pos);
     int negaMax(Position& pos, int depth, int alpha, int beta, std::stop_token& stoken);
+    
+    ZobristHashing zobristHashing;
 
     Engine();
     ~Engine();
 };
 
-class ZobristHashing {
-private:
-    std::unordered_map<int, std::vector<uint64_t>> pieceHashes;
-    uint64_t currentHash;
-
-public:
-    ZobristHashing(int numPieces);
-
-    void movePiece(int piece, int from, int to);
-
-    uint64_t getHash() const;
-
-    ZobristHashing();
-    ~ZobristHashing();
-};
-
-
-
-#endif

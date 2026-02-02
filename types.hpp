@@ -4,11 +4,6 @@
 #include <unordered_map>
 #include <string>
 
-struct Move {
-    uint64_t from;
-    uint64_t to;
-    uint8_t promotion;
-};
 
 enum Piece {
     PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NOPIECE
@@ -21,21 +16,32 @@ enum CastlingRights {
     BLACK_OOO = 8
 };
 
+enum Color { 
+    WHITE, 
+    BLACK, 
+    COLOR_NB 
+};
+
+struct Move {
+    uint8_t from;
+    uint8_t to;
+    uint8_t promotion;
+    uint8_t padding;
+
+  Move() : from(0), to(0), promotion(NOPIECE), padding(0) {}
+  Move(uint8_t dFrom, uint8_t dTo, uint8_t dPromotion) : from(dFrom), to(dTo), promotion(dPromotion), padding(0) {}
+};
+
 struct StateInfo {
   int capturedPiece;
   int movedPiece;
   int promotedToPiece;
   uint64_t promotionSquare;
   CastlingRights castle;
-  std::string epSquare;
+  uint64_t epSquare;
   int halfMove;
 };
 
-enum Color { 
-    WHITE, 
-    BLACK, 
-    COLOR_NB 
-};
 
 inline const std::unordered_map<int, std::string> Squares = {
     {0b0000000000000000000000000000000000000000000000000000000000000001, "a1"},

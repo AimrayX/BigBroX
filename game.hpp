@@ -13,10 +13,9 @@ public:
     Position position;
     Engine engine;
 
-    int init();
     void printBoard();
 
-    Game(/* args */);
+    Game();
     ~Game();
 };
 

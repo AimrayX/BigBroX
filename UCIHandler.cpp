@@ -4,62 +4,31 @@
 #include <string>
 #include <thread>
 #include <stop_token>
+#include <sstream>
 
 #include "attack.hpp"
 #include "types.hpp"
 
-std::string UCIHandler::getStartingPosition() {
-    lastCommand = currentCommand;
-    std::string tempCommand;
-    while (tempCommand != "position") {
-        std::getline(std::cin, tempCommand, ' ');
+std::string UCIHandler::getStartingPosition(std::string commandLine) {
+  std::string fenPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+  std::stringstream ss(commandLine);
+  std::string token;
+  ss >> token;
+  std::cout << "inside1" << std::endl;
+
+  if(ss >> token) {
+    if (token == "startpos") {
+      while(ss >> token) {
+        if (token == "moves") continue; 
+        fenPosition += " " + token;
+      }
+    } else if (token == "fen") {
+      while(ss >> token && token != "moves") {
+        fenPosition += token + " ";
+      }
     }
-    currentCommand = tempCommand;
-    std::cin >> tempCommand;
-
-    if (tempCommand == "startpos") {
-        char nextChar = std::cin.peek(); 
-
-        if (nextChar != '\n' && nextChar != EOF) {
-            std::cin >> tempCommand;
-            if (tempCommand == "moves") {
-                std::string movesLine;
-                std::getline(std::cin, movesLine);
-                currentCommand = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 " + movesLine;
-            } 
-        } else {
-            currentCommand = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 \n";
-        }
-
-    } else if (currentCommand == "fen") {
-        std::string fen;
-        std::getline(std::cin, tempCommand, ' ');
-        fen = tempCommand;
-        std::getline(std::cin, tempCommand, ' ');
-        fen = fen + " " + tempCommand;
-        std::getline(std::cin, tempCommand, ' ');
-        fen = fen + " " + tempCommand;
-        std::getline(std::cin, tempCommand, ' ');
-        fen = fen + " " + tempCommand;
-        std::getline(std::cin, tempCommand, ' ');
-        fen = fen + " " + tempCommand;
-        std::cin >> tempCommand;
-        fen = fen + " " + tempCommand;
-
-        char nextChar = std::cin.peek(); 
-        if (nextChar != '\n' && nextChar != EOF) {
-            
-            std::cin >> tempCommand;
-            if (tempCommand == "moves") {
-                std::string movesLine;
-                std::getline(std::cin, movesLine);
-                currentCommand = fen + " " + movesLine;
-            } 
-        } else {
-          currentCommand = fen + "\n";
-        }
-    }
-  return currentCommand;
+  }
+  return fenPosition;
 }
 
 int UCIHandler::loop() {
@@ -83,22 +52,26 @@ int UCIHandler::loop() {
     if (currentCommand[0] == 's') {
         //handle later
     } else if (currentCommand[0] == 'p') {
-        std::string startingPosition = getStartingPosition();
+        std::cout << "info setting starting position" << std::endl;
+        std::string startingPosition = getStartingPosition(currentCommand);
+        std::cout << "here" << std::endl;
         game.position.setStartingPosition(startingPosition);
     }
-    
+    std::cout << "info starting position set" << std::endl;
     while (currentCommand[0] != 'g') {
         std::getline(std::cin, currentCommand);
     }
-
+    std::cout << "info starting calculations" << std::endl;
     std::jthread t1([this](std::stop_token st) {this->searchResult = game.engine.search(game.position, st);});
 
     while (currentCommand != "stop") {
         //print engine information
-        getEngineState();
+        std::cout << "// INFO //" << std::endl;
         std::getline(std::cin, currentCommand);
     }
+    std::cout << "info stopping engine" << std::endl;
     t1.request_stop();
+    std::cout << "info engine stopped retrieving best move" << std::endl;
     Move finalMove = searchResult.load();
     std::cout << "bestmove " << Squares.at(finalMove.to) << std::endl;
   
