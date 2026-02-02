@@ -121,10 +121,95 @@ uint64_t Position::getPseudoLegalMoves(uint64_t square, int type, Color color) {
 }
 
 void Position::doMove(Move m) {
+  StateInfo state;
+
+  state.castle = mCastleRight;
+  state.epSquare = mEnPassentSquare;
+  state.halfMove = mHalfMove;
+  state.capturedPiece = NOPIECE;
+  state.movedPiece = NOPIECE;
+
+  uint64_t piece = m.from;
+  
+  if (piece & pieces[mSideToMove][ROOK]) {
+    pieces[mSideToMove][ROOK] &= ~piece;
+    pieces[mSideToMove][ROOK] |= m.to;
+    state.movedPiece = ROOK;
+  } else if (piece & pieces[mSideToMove][BISHOP]) {
+    pieces[mSideToMove][BISHOP] &= ~piece;
+    pieces[mSideToMove][BISHOP] |= m.to;
+    state.movedPiece = BISHOP;
+  } else if (piece & pieces[mSideToMove][QUEEN]) {
+    pieces[mSideToMove][QUEEN] &= ~piece;
+    pieces[mSideToMove][QUEEN] |= m.to;
+    state.movedPiece = QUEEN;
+  } else if (piece & pieces[mSideToMove][KING]) {
+    pieces[mSideToMove][KING] &= ~piece;
+    pieces[mSideToMove][KING] |= m.to;
+    state.movedPiece = KING;
+  } else if (piece & pieces[mSideToMove][KNIGHT]) {
+    pieces[mSideToMove][KNIGHT] &= ~piece;
+    pieces[mSideToMove][KNIGHT] |= m.to;
+    state.movedPiece = KNIGHT;
+  } else {
+    pieces[mSideToMove][PAWN] &= ~piece;
+    pieces[mSideToMove][m.promotion] |= m.to;
+    state.movedPiece = PAWN;
+    state.promotedToPiece = m.promotion;
+    state.promotionSquare = m.to;
+  }
+
+  piece = m.to;
+  mSideToMove = ((mSideToMove == WHITE) ? BLACK : WHITE);
+
+  if (piece & pieces[mSideToMove][ROOK]) {
+    pieces[mSideToMove][ROOK] &= ~piece;
+    state.capturedPiece = ROOK;
+  } else if (piece & pieces[mSideToMove][BISHOP]) {
+    pieces[mSideToMove][BISHOP] &= ~piece;
+    state.capturedPiece = BISHOP;
+  } else if (piece & pieces[mSideToMove][QUEEN]) {
+    pieces[mSideToMove][QUEEN] &= ~piece;
+    state.capturedPiece = QUEEN;
+  } else if (piece & pieces[mSideToMove][KING]) {
+    pieces[mSideToMove][KING] &= ~piece;
+    state.capturedPiece = KING;
+  } else if (piece & pieces[mSideToMove][KNIGHT]) {
+    pieces[mSideToMove][KNIGHT] &= ~piece;
+    state.capturedPiece = KNIGHT;
+  } else {
+    pieces[mSideToMove][PAWN] &= ~piece;
+    state.capturedPiece = PAWN;
+  }
+
+  history.push_back(state);
 }
 
 void Position::undoMove(Move m) {
+  StateInfo oldState = history.back();
+  history.pop_back();
 
+  mCastleRight = oldState.castle;
+  mEnPassentSquare = oldState.epSquare;
+  mHalfMove = oldState.halfMove;
+
+  if(oldState.capturedPiece != NOPIECE) {
+    pieces[mSideToMove][oldState.capturedPiece] |= m.to;
+  }
+
+  mSideToMove = ((mSideToMove == WHITE) ? BLACK : WHITE);
+
+  if(m.promotion != NOPIECE) {
+    pieces[mSideToMove][oldState.movedPiece] &= ~m.to;
+    pieces[mSideToMove][oldState.movedPiece] |= m.from;
+  } else {
+    pieces[mSideToMove][oldState.promotedToPiece] &= ~oldState.promotionSquare;
+    if(mSideToMove) {
+      pieces[mSideToMove][PAWN] |= (oldState.promotionSquare << 8);
+    } else {
+      pieces[mSideToMove][PAWN] |= (oldState.promotionSquare >> 8);
+    }
+  }
 }
 
 void Position::getMoves(Color color, std::vector<Move>& moveList) {

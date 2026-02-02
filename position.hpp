@@ -27,6 +27,8 @@ public:
 
     uint64_t pieces[2][6];
     uint64_t occupancies[3];
+    
+    std::vector<StateInfo> history;
 
     uint64_t attackGeneration(int square, int type, Color color);
     uint64_t getPseudoLegalMoves(uint64_t piece, int type, Color color);
@@ -35,7 +37,7 @@ public:
     void undoMove(Move m);
     void getMoves(Color color, std::vector<Move>& moveList);
 
-    Position(/* args */);
+    Position();
     ~Position();
 };
 

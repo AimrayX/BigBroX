@@ -21,6 +21,16 @@ enum CastlingRights {
     BLACK_OOO = 8
 };
 
+struct StateInfo {
+  int capturedPiece;
+  int movedPiece;
+  int promotedToPiece;
+  uint64_t promotionSquare;
+  CastlingRights castle;
+  std::string epSquare;
+  int halfMove;
+};
+
 enum Color { 
     WHITE, 
     BLACK, 

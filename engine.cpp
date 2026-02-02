@@ -2,6 +2,7 @@
 
 #include "types.hpp"
 
+
 const int INF = 1000000;
 
 ZobristHashing::ZobristHashing(int numPieces) {
@@ -33,16 +34,16 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
   if(depth == 0) {
     return Engine::evaluate(pos);
   }
+  std::vector<Move> moveList;
+  pos.getMoves(pos.mSideToMove, moveList);
 
-  std::vector<Move> moves = pos.getMoves();
-
-  if(moves.empty()) {
+  if(moveList.empty()) {
     return -INF + (mDepth - depth);
   }
 
   int bestScore = -INF;
 
-  for(const auto& move : moves) {
+  for(const auto& move : moveList) {
     pos.doMove(move);
 
     int score = -negaMax(pos, depth -1, alpha, beta, stoken);
