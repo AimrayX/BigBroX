@@ -280,7 +280,7 @@ uint64_t attack::getPawnAttacks(int square, Color color, uint64_t occupancy) {
   if(!(occupancy & (1ULL << target))) {
     attacks |= (1ULL << target);
     if((square / 8) == startRank && !(occupancy & (1ULL << (square + (direction * 2))))) {
-      attacks |= (1ULL << (direction * 2));
+      attacks |= (1ULL << (square + (direction * 2)));
     } 
   }
 
@@ -290,7 +290,7 @@ uint64_t attack::getPawnAttacks(int square, Color color, uint64_t occupancy) {
 
   while(attackingSquares) {
     int capture_sq = __builtin_ctzll(attackingSquares);
-    attacks |= capture_sq;
+    attacks |= (1ULL << capture_sq);
     attackingSquares &= (attackingSquares - 1);
   }
 

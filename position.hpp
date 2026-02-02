@@ -1,6 +1,7 @@
 #ifndef POSITION_HPP
 #define POSITION_HPP
 
+#include <cstdint>
 #include <stdint.h>
 #include <string>
 #include <vector>

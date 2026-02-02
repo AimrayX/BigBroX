@@ -115,7 +115,11 @@ uint64_t Position::attackGeneration(int square, int type, Color color) {
     } else if (type == KNIGHT) {
         attack = attack::knightAttacks[square];
     } else {
-        attack = attack::getPawnAttacks(square, color, occupancies[~color]);
+        uint64_t extendedOccupancy = occupancies[2];
+        if(mEnPassentSquare != 0) {
+          extendedOccupancy |= mEnPassentSquare;
+        }
+        attack = attack::getPawnAttacks(square, color, extendedOccupancy);
         mAttacksP = attack;
     }
     return attack;
@@ -169,28 +173,46 @@ void Position::doMove(Move m) {
         pieces[mSideToMove][ROOK] &= ~startBit;
         pieces[mSideToMove][ROOK] |= endBit; 
         state.movedPiece = ROOK;
+        mEnPassentSquare = 0;
     } 
     else if (startBit & pieces[mSideToMove][BISHOP]) {
         pieces[mSideToMove][BISHOP] &= ~startBit;
         pieces[mSideToMove][BISHOP] |= endBit;
         state.movedPiece = BISHOP;
+        mEnPassentSquare = 0;
     } 
     else if (startBit & pieces[mSideToMove][QUEEN]) {
         pieces[mSideToMove][QUEEN] &= ~startBit;
         pieces[mSideToMove][QUEEN] |= endBit;
         state.movedPiece = QUEEN;
+        mEnPassentSquare = 0;
     } 
     else if (startBit & pieces[mSideToMove][KING]) {
         pieces[mSideToMove][KING] &= ~startBit;
         pieces[mSideToMove][KING] |= endBit;
         state.movedPiece = KING;
+
+        if ((int)m.to - (int)m.from == 2) { 
+            uint64_t rookFrom = (1ULL << (m.to + 1));
+            uint64_t rookTo   = (1ULL << (m.to - 1));
+
+            pieces[mSideToMove][ROOK] &= ~rookFrom;
+            pieces[mSideToMove][ROOK] |= rookTo;
+        } 
+        else if ((int)m.to - (int)m.from == -2) {
+            uint64_t rookFrom = (1ULL << (m.to - 2));
+            uint64_t rookTo   = (1ULL << (m.to + 1));
+
+            pieces[mSideToMove][ROOK] &= ~rookFrom;
+            pieces[mSideToMove][ROOK] |= rookTo;
+        }
     } 
     else if (startBit & pieces[mSideToMove][KNIGHT]) {
         pieces[mSideToMove][KNIGHT] &= ~startBit;
         pieces[mSideToMove][KNIGHT] |= endBit;
         state.movedPiece = KNIGHT;
-    } 
-    else {
+        mEnPassentSquare = 0;
+    } else {
         pieces[mSideToMove][PAWN] &= ~startBit;
 
         if (m.promotion == NOPIECE) {
@@ -198,33 +220,50 @@ void Position::doMove(Move m) {
         } else {
             pieces[mSideToMove][m.promotion] |= endBit;
         }
-        
+
+        if(endBit == mEnPassentSquare) {
+          state.capturedPiece = PAWN;
+
+          int capturedOffset = (mSideToMove == WHITE) ? -8 : 8;
+          uint64_t enemyPawnLoc = (1ULL << (m.to + capturedOffset));
+
+          pieces[(mSideToMove == WHITE ? BLACK : WHITE)][PAWN] &= ~enemyPawnLoc;
+        }
+
+        if (abs(m.to - m.from) == 16) {
+          int skippedSquare = (m.from + m.to) / 2;
+          mEnPassentSquare = (1ULL << skippedSquare); 
+        } else {
+          mEnPassentSquare = 0;
+        }
+
         state.movedPiece = PAWN;
         state.promotionSquare = m.to;
     }
 
     mSideToMove = ((mSideToMove == WHITE) ? BLACK : WHITE);
 
-    if (endBit & pieces[mSideToMove][ROOK]) {
+    if(state.capturedPiece == NOPIECE) {
+      if (endBit & pieces[mSideToMove][ROOK]) {
         pieces[mSideToMove][ROOK] &= ~endBit;
         state.capturedPiece = ROOK;
-    } else if (endBit & pieces[mSideToMove][BISHOP]) {
+      } else if (endBit & pieces[mSideToMove][BISHOP]) {
         pieces[mSideToMove][BISHOP] &= ~endBit;
         state.capturedPiece = BISHOP;
-    } else if (endBit & pieces[mSideToMove][QUEEN]) {
+      } else if (endBit & pieces[mSideToMove][QUEEN]) {
         pieces[mSideToMove][QUEEN] &= ~endBit;
         state.capturedPiece = QUEEN;
-    } else if (endBit & pieces[mSideToMove][KING]) {
+      } else if (endBit & pieces[mSideToMove][KING]) {
         pieces[mSideToMove][KING] &= ~endBit;
         state.capturedPiece = KING;
-    } else if (endBit & pieces[mSideToMove][KNIGHT]) {
+      } else if (endBit & pieces[mSideToMove][KNIGHT]) {
         pieces[mSideToMove][KNIGHT] &= ~endBit;
         state.capturedPiece = KNIGHT;
-    } else if (endBit & pieces[mSideToMove][PAWN]) {
+      } else if (endBit & pieces[mSideToMove][PAWN]) {
         pieces[mSideToMove][PAWN] &= ~endBit;
         state.capturedPiece = PAWN;
+      }
     }
-
     occupancies[WHITE] = pieces[WHITE][PAWN] | pieces[WHITE][KNIGHT] | pieces[WHITE][BISHOP] | pieces[WHITE][QUEEN] | pieces[WHITE][KING] | pieces[WHITE][ROOK];
     occupancies[BLACK] = pieces[BLACK][PAWN] | pieces[BLACK][KNIGHT] | pieces[BLACK][BISHOP] | pieces[BLACK][QUEEN] | pieces[BLACK][KING] | pieces[BLACK][ROOK];
     occupancies[2] = occupancies[WHITE] | occupancies[BLACK];
@@ -249,11 +288,34 @@ void Position::undoMove(Move m) {
     else {
         pieces[mSideToMove][oldState.movedPiece] &= ~(1ULL << m.to);
         pieces[mSideToMove][oldState.movedPiece] |= (1ULL << m.from);
+
+        if(oldState.movedPiece == KING) {
+          if((int)m.to - (int)m.from == 2) {
+            uint64_t rookFrom = (1ULL << (m.to + 1));
+            uint64_t rookTo = (1ULL << (m.to - 1));
+            pieces[mSideToMove][ROOK] &= ~rookTo;
+            pieces[mSideToMove][ROOK] |= rookFrom;
+
+          } else if((int)m.to - (int)m.from == -2) {
+            uint64_t rookFrom = (1ULL << (m.to - 2));
+            uint64_t rookTo = (1ULL << (m.to + 1));
+            pieces[mSideToMove][ROOK] &= ~rookTo;
+            pieces[mSideToMove][ROOK] |= rookFrom;
+
+          }
+        }
     }
 
-    // 4. Restore Captured Piece
     if (oldState.capturedPiece != NOPIECE) {
-        pieces[mSideToMove ^ 1][oldState.capturedPiece] |= (1ULL << m.to);
+        Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
+
+        if(oldState.movedPiece == PAWN && (1ULL << m.to) == oldState.epSquare) {
+          int captureOffset = (mSideToMove == WHITE) ? -8 : 8;
+          pieces[enemy][PAWN] |= (1ULL << (m.to + captureOffset));
+
+        } else {
+          pieces[enemy][oldState.capturedPiece] |= (1ULL << m.to);
+        }
     }
 
     // Update bitboards
