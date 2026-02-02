@@ -49,6 +49,7 @@ int UCIHandler::loop() {
     std::cout << "readyok" << std::endl;
 
     std::getline(std::cin, currentCommand);
+  while(
     if (currentCommand[0] == 's') {
         //handle later
     } else if (currentCommand[0] == 'p') {
@@ -73,7 +74,9 @@ int UCIHandler::loop() {
     t1.request_stop();
     std::cout << "info engine stopped retrieving best move" << std::endl;
     Move finalMove = searchResult.load();
-    std::cout << "bestmove " << Squares.at(finalMove.to) << std::endl;
+    std::cout << "info retrieved search result " << finalMove.to << std::endl;
+    
+    if(finalMove.to < Squares.size()) std::cout << "bestmove " << Squares.at(finalMove.to) << std::endl;
   
     return 0;
 }

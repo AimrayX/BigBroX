@@ -113,7 +113,7 @@ int Engine::getDepth() {
 Engine::Engine() {
   mCurrentDepth = 0;
   mCurrentEval = 0;
-  mDepth = 0;
+  mDepth = 3;
   mTimeSpentMs = 0;
 }
 

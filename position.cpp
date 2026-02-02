@@ -155,7 +155,6 @@ void Position::doMove(Move m) {
     pieces[mSideToMove][PAWN] &= ~piece;
     pieces[mSideToMove][m.promotion] |= m.to;
     state.movedPiece = PAWN;
-    state.promotedToPiece = m.promotion;
     state.promotionSquare = m.to;
   }
 
@@ -182,6 +181,13 @@ void Position::doMove(Move m) {
     state.capturedPiece = PAWN;
   }
 
+  // Update bitboards
+    occupancies[WHITE] = pieces[WHITE][PAWN] | pieces[WHITE][KNIGHT] |  pieces[WHITE][BISHOP] | pieces[WHITE][QUEEN] | pieces[WHITE][KING] | pieces[WHITE][ROOK];
+
+    occupancies[BLACK] = pieces[BLACK][PAWN] | pieces[BLACK][KNIGHT] |  pieces[BLACK][BISHOP] | pieces[BLACK][QUEEN] | pieces[BLACK][KING] | pieces[BLACK][ROOK];
+
+    occupancies[2] = occupancies[WHITE] | occupancies[BLACK];
+
   history.push_back(state);
 }
 
@@ -193,23 +199,39 @@ void Position::undoMove(Move m) {
   mEnPassentSquare = oldState.epSquare;
   mHalfMove = oldState.halfMove;
 
-  if(oldState.capturedPiece != NOPIECE) {
-    pieces[mSideToMove][oldState.capturedPiece] |= (1ULL << m.to);
-  }
+    mSideToMove = (mSideToMove == WHITE) ? BLACK : WHITE;
 
-  mSideToMove = ((mSideToMove == WHITE) ? BLACK : WHITE);
-
-  if(m.promotion != NOPIECE) {
-    pieces[mSideToMove][oldState.movedPiece] &= ~(1ULL << m.to);
-    pieces[mSideToMove][oldState.movedPiece] |= (1ULL << m.from);
-  } else {
-    pieces[mSideToMove][oldState.promotedToPiece] &= ~(1ULL << oldState.promotionSquare);
-    if(mSideToMove) {
-      pieces[mSideToMove][PAWN] |= ((1ULL << oldState.promotionSquare) << 8);
-    } else {
-      pieces[mSideToMove][PAWN] |= ((1ULL << oldState.promotionSquare) >> 8);
+    if (m.promotion != NOPIECE) {
+        // --- PROMOTION UNDO ---
+        pieces[mSideToMove][m.promotion] &= ~(1ULL << m.to);
+        pieces[mSideToMove][PAWN] |= (1ULL << m.from);
+    } 
+    else {
+        // --- NORMAL UNDO ---
+        if (oldState.capturedPiece != NOPIECE) {
+            pieces[mSideToMove][oldState.movedPiece] &= ~(1ULL << m.to);
+            pieces[mSideToMove][oldState.movedPiece] |= (1ULL << m.from);
+        }
     }
-  }
+
+    // 4. Restore Captured Piece
+    if (oldState.capturedPiece != NOPIECE) {
+        //if (oldState.isEnPassant) {
+        //     capSquare = (mSideToMove == WHITE) ? (m.to - 8) : (m.to + 8);
+        //}
+        pieces[mSideToMove ^ 1][oldState.capturedPiece] |= (1ULL << m.to);
+        // Handle En Passant position
+        //if (oldState.isEnPassant) {
+        //     capSquare = (mSideToMove == WHITE) ? (m.to - 8) : (m.to + 8);
+        //}
+    }
+    // Update bitboards
+    occupancies[WHITE] = pieces[WHITE][PAWN] | pieces[WHITE][KNIGHT] |  pieces[WHITE][BISHOP] | pieces[WHITE][QUEEN] | pieces[WHITE][KING] | pieces[WHITE][ROOK];
+
+    occupancies[BLACK] = pieces[BLACK][PAWN] | pieces[BLACK][KNIGHT] |  pieces[BLACK][BISHOP] | pieces[BLACK][QUEEN] | pieces[BLACK][KING] | pieces[BLACK][ROOK];
+
+    occupancies[2] = occupancies[WHITE] | occupancies[BLACK];
+
 }
 
 void Position::getMoves(Color color, std::vector<Move>& moveList) {
