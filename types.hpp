@@ -10,10 +10,10 @@ enum Piece {
 };
 
 enum CastlingRights {
-    WHITE_OO = 1,
-    WHITE_OOO = 2,
-    BLACK_OO = 4,
-    BLACK_OOO = 8
+    WHITE_OO,
+    WHITE_OOO,
+    BLACK_OO,
+    BLACK_OOO
 };
 
 enum Color { 
@@ -37,7 +37,7 @@ struct StateInfo {
   int movedPiece;
   int promotedToPiece;
   uint64_t promotionSquare;
-  CastlingRights castle;
+  int castle;
   uint64_t epSquare;
   int halfMove;
 };

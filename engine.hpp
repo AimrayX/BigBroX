@@ -48,7 +48,7 @@ public:
     Move search(Position& pos, std::stop_token stoken);
     int evaluate(Position& pos);
     int negaMax(Position& pos, int depth, int alpha, int beta, std::stop_token& stoken);
-    
+
     ZobristHashing zobristHashing;
 
     Engine();

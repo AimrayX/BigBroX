@@ -2,98 +2,102 @@
 
 #include <cstdint>
 #include <sstream>
+#include <iostream>
 
 #include "types.hpp"
 #include "utils.hpp"
 #include "attack.hpp"
 
 int Position::setStartingPosition(std::string startingPosition) {
-        int realIndex = 0;
-    for (int i = 0; i < 71; i++) {
-        realIndex = (63-i) + (i-((63-i) % 8));
-        if    (startingPosition[i] == '8' || startingPosition[i] == '7' 
-            || startingPosition[i] == '6' || startingPosition[i] == '5' 
-            || startingPosition[i] == '4' || startingPosition[i] == '3' 
-            || startingPosition[i] == '2' || startingPosition[i] == '1') {
-            i += startingPosition[i] - '0';
-        } else if (startingPosition[i] == 'r') {
-            pieces[BLACK][ROOK] |= 1 << realIndex;
-            occupancies[BLACK] |= pieces[BLACK][ROOK];
-        } else if (startingPosition[i] == 'n') {
-            pieces[BLACK][KNIGHT] |= 1 << realIndex;
-            occupancies[BLACK] |= pieces[BLACK][KNIGHT];
-        } else if (startingPosition[i] == 'b') {
-            pieces[BLACK][BISHOP] |= 1 << realIndex;
-            occupancies[BLACK] |= pieces[BLACK][BISHOP];
-        } else if (startingPosition[i] == 'q') {
-            pieces[BLACK][QUEEN] |= 1 << realIndex;
-            occupancies[BLACK] |= pieces[BLACK][QUEEN];
-        } else if (startingPosition[i] == 'k') {
-            pieces[BLACK][KING] |= 1 << realIndex;
-            occupancies[BLACK] |= pieces[BLACK][KING];
-        } else if (startingPosition[i] == 'p') {
-            pieces[BLACK][PAWN] |= 1 << realIndex;
-            occupancies[BLACK] |= pieces[BLACK][PAWN];
-        } else if (startingPosition[i] == 'R') {
-            pieces[WHITE][ROOK] |= 1 << realIndex;
-            occupancies[WHITE] |= pieces[WHITE][ROOK];
-        } else if (startingPosition[i] == 'N') {
-            pieces[WHITE][KNIGHT] |= 1 << realIndex;
-            occupancies[WHITE] |= pieces[WHITE][KNIGHT];
-        } else if (startingPosition[i] == 'B') {
-            pieces[WHITE][BISHOP] |= 1 << realIndex;
-            occupancies[WHITE] |= pieces[WHITE][BISHOP];
-        } else if (startingPosition[i] == 'Q') {
-            pieces[WHITE][QUEEN] |= 1 << realIndex;
-            occupancies[WHITE] |= pieces[WHITE][QUEEN];
-        } else if (startingPosition[i] == 'K') {
-            pieces[WHITE][KING] |= 1 << realIndex;
-            occupancies[WHITE] |= pieces[WHITE][KING];
-        } else if (startingPosition[i] == 'P') {
-            pieces[WHITE][PAWN] |= 1 << realIndex;
-            occupancies[WHITE] |= pieces[WHITE][PAWN];
+    // Clear existing state first
+    for(int c = 0; c < 2; c++) {
+        for(int p = 0; p < 6; p++) {
+            pieces[c][p] = 0ULL;
         }
-      occupancies[2] |= occupancies[BLACK] | occupancies[WHITE];
     }
+    occupancies[0] = 0ULL; 
+    occupancies[1] = 0ULL; 
+    occupancies[2] = 0ULL;
+
+    int rank = 7;
+    int file = 0;
+
+    // We only iterate the board part of the FEN (stop at space)
     std::istringstream iss(startingPosition);
-    std::string temp;
-    std::getline(iss, temp, ' ');
+    std::string boardPart;
+    std::getline(iss, boardPart, ' ');
 
-    std::getline(iss, temp, ' ');
-    if (temp == "w") {
-        mSideToMove = WHITE;
-    } else if (temp == "b") {
-        mSideToMove = BLACK;
-    } else {
-        mSideToMove = COLOR_NB;
-    }
+    for (char c : boardPart) {
+        if (c == '/') {
+            rank--;
+            file = 0;
+        } 
+        else if (isdigit(c)) {
+            // Advance the file by the number value (empty squares)
+            file += (c - '0');
+        } 
+        else {
+            // It's a piece
+            int square = rank * 8 + file;
+            int type = NOPIECE;
+            int color = (isupper(c)) ? WHITE : BLACK;
+            char lowerC = tolower(c);
 
-    std::getline(iss, temp, ' ');
-    for (size_t i = 0; i < temp.length(); i++)
-    {
-        if (temp[i] == 'K') {
-            mCastleRight = WHITE_OO;
-        } else if (temp[i] == 'Q') {
-            mCastleRight = WHITE_OOO;
-        } else if (temp[i] == 'k') {
-            mCastleRight = BLACK_OO;
-        } else if (temp[i] == 'q') {
-            mCastleRight = BLACK_OOO;
+            if (lowerC == 'p') type = PAWN;
+            else if (lowerC == 'n') type = KNIGHT;
+            else if (lowerC == 'b') type = BISHOP;
+            else if (lowerC == 'r') type = ROOK;
+            else if (lowerC == 'q') type = QUEEN;
+            else if (lowerC == 'k') type = KING;
+
+            if (type != NOPIECE) {
+                pieces[color][type] |= (1ULL << square);
+                occupancies[color] |= (1ULL << square);
+            }
+            file++;
         }
     }
 
-    std::getline(iss, temp, ' ');
-    mEnPassentSquare = util::mAlgebraicToBit(temp);
-    
-    std::getline(iss, temp, ' ');
-    mHalfMove = std::stoi(temp);
+    occupancies[2] = occupancies[WHITE] | occupancies[BLACK];
 
-    std::getline(iss, temp, ' ');
-    mFullMove = std::stoi(temp); 
+    // Continue with the rest of the parsing (Side to move, castling, etc.)
+    std::string temp;
 
+    if (std::getline(iss, temp, ' ')) {
+         if (temp == "w") {
+            mSideToMove = WHITE;
+        } else if (temp == "b") {
+            mSideToMove = BLACK;
+        }
+    }
+
+    mCastleRight = 0;
+    if (std::getline(iss, temp, ' ')) {
+        for (char c : temp) {
+            if (c == 'K') mCastleRight |= WHITE_OO;
+            else if (c == 'Q') mCastleRight |= WHITE_OOO;
+            else if (c == 'k') mCastleRight |= BLACK_OO;
+            else if (c == 'q') mCastleRight |= BLACK_OOO;
+        }
+    }
+
+    // En Passant
+    if (std::getline(iss, temp, ' ')) {
+        mEnPassentSquare = util::mAlgebraicToBit(temp);
+    }
+
+    // Half/Full moves
+    if (std::getline(iss, temp, ' ')) mHalfMove = std::stoi(temp);
+    if (std::getline(iss, temp, ' ')) mFullMove = std::stoi(temp); 
+
+    printBoard();
+
+    // Handle additional moves (UCI "position startpos moves e2e4 ...")
     while (iss >> temp) {
         doMove(util::parseUCIMove(temp));
     }
+
+    printBoard();
 
     return 0;
 }
@@ -112,6 +116,7 @@ uint64_t Position::attackGeneration(int square, int type, Color color) {
         attack = attack::knightAttacks[square];
     } else {
         attack = attack::getPawnAttacks(square, color, occupancies[~color]);
+        mAttacksP = attack;
     }
     return attack;
 }
@@ -120,75 +125,111 @@ uint64_t Position::getPseudoLegalMoves(int square, int type, Color color) {
   return (attackGeneration(square, type, color) & ~occupancies[color]);
 }
 
+// Check if 'square' is attacked by pieces of 'sideAttacking'
+bool Position::isSquareAttacked(int square, Color sideAttacking) {
+    Color defendingSide = (sideAttacking == WHITE) ? BLACK : WHITE;
+    if (attack::getPawnAttacks(square, defendingSide, occupancies[2]) & pieces[sideAttacking][PAWN]) {
+        return true;
+    }
+
+    if (attack::knightAttacks[square] & pieces[sideAttacking][KNIGHT]) {
+        return true;
+    }
+
+    if (attack::kingAttacks[square] & pieces[sideAttacking][KING]) {
+        return true;
+    }
+
+    uint64_t bishopsQueens = pieces[sideAttacking][BISHOP] | pieces[sideAttacking][QUEEN];
+    if (attack::getBishopAttacks(square, occupancies[2]) & bishopsQueens) {
+        return true;
+    }
+
+    uint64_t rooksQueens = pieces[sideAttacking][ROOK] | pieces[sideAttacking][QUEEN];
+    if (attack::getRookAttacks(square, occupancies[2]) & rooksQueens) {
+        return true;
+    }
+
+    return false;
+}
+
 void Position::doMove(Move m) {
-  StateInfo state;
+    StateInfo state;
 
-  state.castle = mCastleRight;
-  state.epSquare = mEnPassentSquare;
-  state.halfMove = mHalfMove;
-  state.capturedPiece = NOPIECE;
-  state.movedPiece = NOPIECE;
+    state.castle = mCastleRight;
+    state.epSquare = mEnPassentSquare;
+    state.halfMove = mHalfMove;
+    state.capturedPiece = NOPIECE;
+    state.movedPiece = NOPIECE;
 
-  uint64_t piece = (1ULL << m.from);
-  
-  if (piece & pieces[mSideToMove][ROOK]) {
-    pieces[mSideToMove][ROOK] &= ~piece;
-    pieces[mSideToMove][ROOK] |= m.to;
-    state.movedPiece = ROOK;
-  } else if (piece & pieces[mSideToMove][BISHOP]) {
-    pieces[mSideToMove][BISHOP] &= ~piece;
-    pieces[mSideToMove][BISHOP] |= m.to;
-    state.movedPiece = BISHOP;
-  } else if (piece & pieces[mSideToMove][QUEEN]) {
-    pieces[mSideToMove][QUEEN] &= ~piece;
-    pieces[mSideToMove][QUEEN] |= m.to;
-    state.movedPiece = QUEEN;
-  } else if (piece & pieces[mSideToMove][KING]) {
-    pieces[mSideToMove][KING] &= ~piece;
-    pieces[mSideToMove][KING] |= m.to;
-    state.movedPiece = KING;
-  } else if (piece & pieces[mSideToMove][KNIGHT]) {
-    pieces[mSideToMove][KNIGHT] &= ~piece;
-    pieces[mSideToMove][KNIGHT] |= m.to;
-    state.movedPiece = KNIGHT;
-  } else {
-    pieces[mSideToMove][PAWN] &= ~piece;
-    pieces[mSideToMove][m.promotion] |= m.to;
-    state.movedPiece = PAWN;
-    state.promotionSquare = m.to;
-  }
+    uint64_t startBit = (1ULL << m.from);
+    uint64_t endBit   = (1ULL << m.to); 
 
-  piece = (1ULL << m.to);
-  mSideToMove = ((mSideToMove == WHITE) ? BLACK : WHITE);
+    if (startBit & pieces[mSideToMove][ROOK]) {
+        pieces[mSideToMove][ROOK] &= ~startBit;
+        pieces[mSideToMove][ROOK] |= endBit; 
+        state.movedPiece = ROOK;
+    } 
+    else if (startBit & pieces[mSideToMove][BISHOP]) {
+        pieces[mSideToMove][BISHOP] &= ~startBit;
+        pieces[mSideToMove][BISHOP] |= endBit;
+        state.movedPiece = BISHOP;
+    } 
+    else if (startBit & pieces[mSideToMove][QUEEN]) {
+        pieces[mSideToMove][QUEEN] &= ~startBit;
+        pieces[mSideToMove][QUEEN] |= endBit;
+        state.movedPiece = QUEEN;
+    } 
+    else if (startBit & pieces[mSideToMove][KING]) {
+        pieces[mSideToMove][KING] &= ~startBit;
+        pieces[mSideToMove][KING] |= endBit;
+        state.movedPiece = KING;
+    } 
+    else if (startBit & pieces[mSideToMove][KNIGHT]) {
+        pieces[mSideToMove][KNIGHT] &= ~startBit;
+        pieces[mSideToMove][KNIGHT] |= endBit;
+        state.movedPiece = KNIGHT;
+    } 
+    else {
+        pieces[mSideToMove][PAWN] &= ~startBit;
 
-  if (piece & pieces[mSideToMove][ROOK]) {
-    pieces[mSideToMove][ROOK] &= ~piece;
-    state.capturedPiece = ROOK;
-  } else if (piece & pieces[mSideToMove][BISHOP]) {
-    pieces[mSideToMove][BISHOP] &= ~piece;
-    state.capturedPiece = BISHOP;
-  } else if (piece & pieces[mSideToMove][QUEEN]) {
-    pieces[mSideToMove][QUEEN] &= ~piece;
-    state.capturedPiece = QUEEN;
-  } else if (piece & pieces[mSideToMove][KING]) {
-    pieces[mSideToMove][KING] &= ~piece;
-    state.capturedPiece = KING;
-  } else if (piece & pieces[mSideToMove][KNIGHT]) {
-    pieces[mSideToMove][KNIGHT] &= ~piece;
-    state.capturedPiece = KNIGHT;
-  } else {
-    pieces[mSideToMove][PAWN] &= ~piece;
-    state.capturedPiece = PAWN;
-  }
+        if (m.promotion == NOPIECE) {
+            pieces[mSideToMove][PAWN] |= endBit;
+        } else {
+            pieces[mSideToMove][m.promotion] |= endBit;
+        }
+        
+        state.movedPiece = PAWN;
+        state.promotionSquare = m.to;
+    }
 
-  // Update bitboards
-    occupancies[WHITE] = pieces[WHITE][PAWN] | pieces[WHITE][KNIGHT] |  pieces[WHITE][BISHOP] | pieces[WHITE][QUEEN] | pieces[WHITE][KING] | pieces[WHITE][ROOK];
+    mSideToMove = ((mSideToMove == WHITE) ? BLACK : WHITE);
 
-    occupancies[BLACK] = pieces[BLACK][PAWN] | pieces[BLACK][KNIGHT] |  pieces[BLACK][BISHOP] | pieces[BLACK][QUEEN] | pieces[BLACK][KING] | pieces[BLACK][ROOK];
+    if (endBit & pieces[mSideToMove][ROOK]) {
+        pieces[mSideToMove][ROOK] &= ~endBit;
+        state.capturedPiece = ROOK;
+    } else if (endBit & pieces[mSideToMove][BISHOP]) {
+        pieces[mSideToMove][BISHOP] &= ~endBit;
+        state.capturedPiece = BISHOP;
+    } else if (endBit & pieces[mSideToMove][QUEEN]) {
+        pieces[mSideToMove][QUEEN] &= ~endBit;
+        state.capturedPiece = QUEEN;
+    } else if (endBit & pieces[mSideToMove][KING]) {
+        pieces[mSideToMove][KING] &= ~endBit;
+        state.capturedPiece = KING;
+    } else if (endBit & pieces[mSideToMove][KNIGHT]) {
+        pieces[mSideToMove][KNIGHT] &= ~endBit;
+        state.capturedPiece = KNIGHT;
+    } else if (endBit & pieces[mSideToMove][PAWN]) {
+        pieces[mSideToMove][PAWN] &= ~endBit;
+        state.capturedPiece = PAWN;
+    }
 
+    occupancies[WHITE] = pieces[WHITE][PAWN] | pieces[WHITE][KNIGHT] | pieces[WHITE][BISHOP] | pieces[WHITE][QUEEN] | pieces[WHITE][KING] | pieces[WHITE][ROOK];
+    occupancies[BLACK] = pieces[BLACK][PAWN] | pieces[BLACK][KNIGHT] | pieces[BLACK][BISHOP] | pieces[BLACK][QUEEN] | pieces[BLACK][KING] | pieces[BLACK][ROOK];
     occupancies[2] = occupancies[WHITE] | occupancies[BLACK];
 
-  history.push_back(state);
+    history.push_back(state);
 }
 
 void Position::undoMove(Move m) {
@@ -202,29 +243,19 @@ void Position::undoMove(Move m) {
     mSideToMove = (mSideToMove == WHITE) ? BLACK : WHITE;
 
     if (m.promotion != NOPIECE) {
-        // --- PROMOTION UNDO ---
         pieces[mSideToMove][m.promotion] &= ~(1ULL << m.to);
         pieces[mSideToMove][PAWN] |= (1ULL << m.from);
     } 
     else {
-        // --- NORMAL UNDO ---
-        if (oldState.capturedPiece != NOPIECE) {
-            pieces[mSideToMove][oldState.movedPiece] &= ~(1ULL << m.to);
-            pieces[mSideToMove][oldState.movedPiece] |= (1ULL << m.from);
-        }
+        pieces[mSideToMove][oldState.movedPiece] &= ~(1ULL << m.to);
+        pieces[mSideToMove][oldState.movedPiece] |= (1ULL << m.from);
     }
 
     // 4. Restore Captured Piece
     if (oldState.capturedPiece != NOPIECE) {
-        //if (oldState.isEnPassant) {
-        //     capSquare = (mSideToMove == WHITE) ? (m.to - 8) : (m.to + 8);
-        //}
         pieces[mSideToMove ^ 1][oldState.capturedPiece] |= (1ULL << m.to);
-        // Handle En Passant position
-        //if (oldState.isEnPassant) {
-        //     capSquare = (mSideToMove == WHITE) ? (m.to - 8) : (m.to + 8);
-        //}
     }
+
     // Update bitboards
     occupancies[WHITE] = pieces[WHITE][PAWN] | pieces[WHITE][KNIGHT] |  pieces[WHITE][BISHOP] | pieces[WHITE][QUEEN] | pieces[WHITE][KING] | pieces[WHITE][ROOK];
 
@@ -256,6 +287,52 @@ void Position::getMoves(Color color, std::vector<Move>& moveList) {
       piece &= (piece - 1);
     }
   }
+}
+
+void Position::printBoard() {
+    std::cout << "   occupancies both" << std::endl;
+    std::cout << "  +-----------------+" << std::endl;
+    // Iterate Ranks from 7 (Row 8) down to 0 (Row 1)
+    for (int rank = 7; rank >= 0; rank--) {
+        std::cout << rank + 1 << " | "; // Print Rank Number
+        for (int file = 0; file < 8; file++) {
+            // Calculate the actual square index (0 to 63)
+            int square = rank * 8 + file;
+            
+            // Check the bit at 'square'
+            if ((occupancies[2] >> square) & 1) {
+                std::cout << "1 ";
+            } else {
+                std::cout << ". ";
+            }
+        }
+        std::cout << "|" << std::endl;
+    }
+    std::cout << "  +-----------------+" << std::endl;
+    std::cout << "    a b c d e f g h" << std::endl;
+    /*
+    std::cout << "   attacks pawns" << std::endl;
+    std::cout << "  +-----------------+" << std::endl;
+    uint64_t attacksP = mAttacksP;
+    // Iterate Ranks from 7 (Row 8) down to 0 (Row 1)
+    for (int rank = 7; rank >= 0; rank--) {
+        std::cout << rank + 1 << " | "; // Print Rank Number
+        for (int file = 0; file < 8; file++) {
+            // Calculate the actual square index (0 to 63)
+            int square = rank * 8 + file;
+            
+            // Check the bit at 'square'
+            if ((attacksP >> square) & 1) {
+                std::cout << "1 ";
+            } else {
+                std::cout << ". ";
+            }
+        }
+        std::cout << "|" << std::endl;
+    }
+    std::cout << "  +-----------------+" << std::endl;
+    std::cout << "    a b c d e f g h" << std::endl;
+    */
 }
 
 Position::Position(/* args */) {

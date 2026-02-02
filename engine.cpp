@@ -35,25 +35,39 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
   if(depth == 0) {
     return Engine::evaluate(pos);
   }
+
   std::vector<Move> moveList;
   pos.getMoves(pos.mSideToMove, moveList);
-
-  if(moveList.empty()) {
-    return -INF + (mDepth - depth);
-  }
-
   int bestScore = -INF;
+  int movesSearched = 0;
 
   for(const auto& move : moveList) {
+    std::cout << "\nbefore Move" << std::endl;
+    pos.printBoard();
+
     pos.doMove(move);
 
-    int score = -negaMax(pos, depth -1, alpha, beta, stoken);
+    std::cout << "\nafter Move" << std:: endl;
+    pos.printBoard();
+
+    Color sideJustMoved = (pos.mSideToMove == WHITE) ? BLACK : WHITE;
+    int kingSquare = __builtin_ctzll(pos.pieces[sideJustMoved][KING]);
+
+    if (pos.isSquareAttacked(kingSquare, pos.mSideToMove)) {
+        pos.undoMove(move);
+        continue;
+    }
+
+    movesSearched++;
+
+    int score = -negaMax(pos, depth -1, -alpha, -beta, stoken);
     pos.undoMove(move);
 
     if(score > bestScore) {
       if(depth == mCurrentDepth) {
       mLastBestMove = move; 
       }
+      bestScore = score;
     }
 
     if(bestScore > alpha) {
@@ -65,21 +79,25 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
     }
   }
 
+  if (movesSearched == 0) {
+      int kingSq = __builtin_ctzll(pos.pieces[pos.mSideToMove][KING]);
+
+      Color opponent = (pos.mSideToMove == WHITE) ? BLACK : WHITE;
+      if (pos.isSquareAttacked(kingSq, opponent)) {
+          return -INF + (mDepth - depth);
+      } else {
+          return 0;
+      }
+  }
+
   return bestScore;
 }
 
 Move Engine::search(Position& pos, std::stop_token stoken) {
     mLastBestMove = Move();
     mCurrentDepth = 1;
-    std::cout << "in search" << std::endl;
     while (!stoken.stop_requested() && mCurrentDepth <= mDepth) {
-        //search for best move
-        //go through all moves
-        //evaluate position
-        //go to next depth and analyse best move for opponent and so on
-        std::cout << "before negaMax" << std::endl;
         int score = negaMax(pos, mCurrentDepth, -INF, INF, stoken);
-        std::cout << "after negaMax" << std::endl;
 
 
         if(stoken.stop_requested()) {
@@ -97,9 +115,32 @@ Move Engine::search(Position& pos, std::stop_token stoken) {
 }
 
 int Engine::evaluate(Position& pos) {
-  int score = std::rand() % 101;
+  // 1. Define piece values (Standard: P=100, N=300, etc.)
+    // Note: King is given a huge value to ensure the engine protects it above all else.
+    static const int pieceValues[] = {
+        100,   // PAWN
+        300,   // KNIGHT
+        320,   // BISHOP (slightly more than knight is common)
+        500,   // ROOK
+        900,   // QUEEN
+        20000  // KING
+    };
 
-  return (pos.mSideToMove == WHITE) ? score : -score;
+    int score = 0;
+
+    // 2. Sum up material for both sides
+    for (int p = 0; p < 6; p++) {
+        // __builtin_popcountll counts the number of '1' bits (pieces) in the bitboard
+        int whiteCount = __builtin_popcountll(pos.pieces[WHITE][p]);
+        int blackCount = __builtin_popcountll(pos.pieces[BLACK][p]);
+
+        score += pieceValues[p] * (whiteCount - blackCount);
+    }
+
+    // 3. Return score from the perspective of the side to move
+    // If it's White's turn, a positive score is good.
+    // If it's Black's turn, we must negate the score because Negamax always maximizes "my" score.
+    return (pos.mSideToMove == WHITE) ? score : -score;
 }
 
 void Engine::setDepth(int depth) {
@@ -113,7 +154,7 @@ int Engine::getDepth() {
 Engine::Engine() {
   mCurrentDepth = 0;
   mCurrentEval = 0;
-  mDepth = 3;
+  mDepth = 1;
   mTimeSpentMs = 0;
 }
 

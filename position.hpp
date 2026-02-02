@@ -19,7 +19,7 @@ public:
     uint32_t mNumberOfBlackPieces;
 
     Color mSideToMove;
-    CastlingRights mCastleRight;
+    int mCastleRight;
 
     uint64_t mEnPassentSquare;
     int mHalfMove;
@@ -36,6 +36,12 @@ public:
     void doMove(Move m);
     void undoMove(Move m);
     void getMoves(Color color, std::vector<Move>& moveList);
+    bool isSquareAttacked(int square, Color sideAttacking);
+
+    void printBoard();
+
+
+    uint64_t mAttacksP = 0ULL;
 
     Position();
     ~Position();
