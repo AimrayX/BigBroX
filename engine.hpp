@@ -5,10 +5,8 @@
 #include <cstdint>
 #include <string>
 #include <stdint.h>
-#include <iostream>
 #include <vector>
 #include <unordered_map>
-#include <random>
 #include <stop_token>
 #include <atomic>
 
@@ -34,6 +32,10 @@ class Engine
 {
 private:
     int mDepth;
+    std::chrono::time_point<std::chrono::steady_clock> mStartTime;
+    int mTimeAllocated;
+    bool mStop;
+    long long nodes;
 
 public:
     std::atomic<int> mCurrentDepth;
@@ -52,9 +54,9 @@ public:
     int getDepth();
 
     uint64_t mAlgebraicToBit(std::string alge);
-    Move search(Position& pos, std::stop_token stoken);
+    Move search(Position& pos, int timeLimitMs, std::stop_token stoken);
     int evaluate(Position& pos);
-    int quiescence(Position& pos, int alpha, int beta);
+    int quiescence(Position& pos, int alpha, int beta, std::stop_token& stoken);
     int negaMax(Position& pos, int depth, int alpha, int beta, std::stop_token& stoken);
     void pickMove(MoveList& list, int moveNum);
 

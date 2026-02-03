@@ -58,12 +58,21 @@ int UCIHandler::loop() {
   
         switch(it->second) {
           case UCICommand::Uci:
-            std::cout << "id name BigBroX\nid author Hall T.\noption name Hash type spin default 16 min 1 max 1024\nuciok" << std::endl;
+            std::cout << "id name BigBroX 1.0" << std::endl;
+            std::cout << "id author Hall T." << std::endl;
+            //std::cout << "option name Hash type spin default 16 min 1 max 1024" << std::endl;
+            std::cout << "uciok" << std::endl;
             break;
 
           case UCICommand::IsReady:
             attack::init();
             std::cout << "readyok" << std::endl;
+            break;
+
+          case UCICommand::UCINewGame:
+            break;
+
+          case UCICommand::SetOption:
             break;
 
           case UCICommand::Position: {
@@ -74,15 +83,43 @@ int UCIHandler::loop() {
           }
 
           case UCICommand::Go: {
-            std::cout << "info starting calculations" << std::endl;
 
             if (t1.joinable()) t1.request_stop();
-            ss >> token;
-            ss >> token;
+            int wtime = 0;
+            int btime = 0;
+            int winc = 0;
+            int binc = 0;
+            int movetime = 0;
+
+            while(ss >> token) {
+              if(token == "wtime") {
+                ss >> token;
+                wtime = std::stoi(token);
+              } else if(token == "btime") {
+                ss >> token;
+                btime = std::stoi(token);
+              } else if(token == "winc") {
+                ss >> token;
+                winc = std::stoi(token);
+              } else if(token == "binc") {
+                ss >> token;
+                binc = std::stoi(token);
+              } else if(token == "winc") {
+                ss >> token;
+                winc = std::stoi(token);
+              } else if(token == "movetime") {
+                ss >> token;
+                movetime = std::stoi(token);
+              } else if(token == "infinite") {
+                movetime = 100000;
+              }
+            }
+            int allocatedTime = (game.position.mSideToMove == WHITE) ? ((wtime / 30) + winc) : ((btime / 30) + binc);
+
             std::cout << "info searching for depth: " << token << std::endl;
             game.engine.setDepth(std::stoi(token));
 
-            t1 = std::jthread([this](std::stop_token st) {this->searchResult = game.engine.search(game.position, st);});
+            t1 = std::jthread([this, allocatedTime](std::stop_token st) {this->searchResult = game.engine.search(game.position, allocatedTime, st);});
             break;
           }
 
@@ -102,6 +139,7 @@ int UCIHandler::loop() {
           case UCICommand::Quit:
             std::cout << "quitting" << std::endl;
             return 0;
+
         }
       } else { std::cout << "unknown command" << std::endl; return -1; }
     }

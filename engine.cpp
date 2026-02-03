@@ -3,6 +3,10 @@
 #include "types.hpp"
 #include "utils.hpp"
 
+#include <chrono>
+#include <iostream>
+#include <random>
+
 const int INF = 1000000;
 
 ZobristHashing::ZobristHashing(int numPieces) {
@@ -54,36 +58,49 @@ void Engine::pickMove(MoveList& list, int moveNum) {
     }
 }
 
-int Engine::quiescence(Position& pos, int alpha, int beta) {
-    // 1. Stand Pat: Assess the static evaluation of the current position.
-    // If we don't capture anything else, is this position already good enough?
+int Engine::quiescence(Position& pos, int alpha, int beta, std::stop_token& stoken) {
+
+    if(stoken.stop_requested()) {
+      return 0;
+    }
+
+    if ((nodes & 2047) == 0) {
+      auto now = std::chrono::steady_clock::now();
+      long long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - mStartTime).count();
+
+      if (elapsed >= mTimeAllocated) {
+          mStop = true;
+      }
+    }
+    nodes++;
+
+    if (mStop) return 0;
+
     int stand_pat = evaluate(pos);
 
-    // 2. Pruning: If the static position is already better than beta, stop.
     if (stand_pat >= beta) {
         return beta;
     }
 
-    // 3. Update Alpha: If standing pat is better than alpha, raise alpha.
     if (stand_pat > alpha) {
         alpha = stand_pat;
     }
 
-    // 4. Generate Moves
     MoveList moveList;
     pos.getMoves(pos.mSideToMove, moveList);
 
-    // 5. Loop through ONLY CAPTURES
     for (int i = 0; i < moveList.count; i++) {
         // --- FILTER: ONLY CAPTURES ---
-        // We check if the destination square has an enemy piece.
-        // (Note: This is a simplified check. En Passant needs special handling but this covers 99% of cases)
         Color enemy = (pos.mSideToMove == WHITE) ? BLACK : WHITE;
         if (pos.occupancies[enemy] & (1ULL << moveList.moves[i].to)) {
             pos.doMove(moveList.moves[i]);
             // Recursively call quiescence
-            int score = -quiescence(pos, -beta, -alpha);
+            int score = -quiescence(pos, -beta, -alpha, stoken);
             pos.undoMove(moveList.moves[i]);
+
+            if(stoken.stop_requested()) {
+              return 0;
+            }
 
             if (score >= beta) {
                 return beta;
@@ -97,13 +114,26 @@ int Engine::quiescence(Position& pos, int alpha, int beta) {
 }
 
 int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_token& stoken) {
+
   if (stoken.stop_requested()) return 0;
+
+  if ((nodes & 2047) == 0) {
+      auto now = std::chrono::steady_clock::now();
+      long long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - mStartTime).count();
+
+      if (elapsed >= mTimeAllocated) {
+          mStop = true;
+      }
+  }
+  nodes++;
+
+  if (mStop) return 0;
 
   int ply = mCurrentDepth -depth;
   pvLength[ply] = ply;
 
   if(depth == 0) {
-    return quiescence(pos, alpha, beta);
+    return quiescence(pos, alpha, beta, stoken);
   }
 
   MoveList moveList;
@@ -133,9 +163,7 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
     if(stoken.stop_requested()) return 0;
 
     if(score > bestScore) {
-      if(depth == mCurrentDepth) {
-        mLastBestMove = moveList.moves[i]; 
-      }
+
       bestScore = score;
 
       if(score > alpha) {
@@ -169,28 +197,40 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
   return bestScore;
 }
 
-Move Engine::search(Position& pos, std::stop_token stoken) {
+Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
+    mStartTime = std::chrono::steady_clock::now();
+    mTimeAllocated = timeLimitMs;
+    mStop = false;
+    nodes = 0;
+
     mLastBestMove = Move();
+    mCurrentEval = 0;
     mCurrentDepth = 1;
-    while (!stoken.stop_requested() && mCurrentDepth <= mDepth) {
+
+    std::cout << timeLimitMs << std::endl;
+
+    for(int depth = 1; depth <= mDepth; depth++) {
+
         int score = negaMax(pos, mCurrentDepth, -INF, INF, stoken);
 
+        if(mStop || stoken.stop_requested()) {
+          break;
+        }
+
+
         // Print PV
-        std::cout << "info depth " << mCurrentDepth << " score cp " << score << " pv";
+        std::cout << "info depth " << depth << " score cp " << score << " pv";
         for (int i = 0; i < pvLength[0]; i++) {
           Move m = pvTable[0][i];
           std::cout << " " << util::squareToString(m.from) << util::squareToString(m.to);
         }
         std::cout << std::endl;
 
-        if(stoken.stop_requested()) {
-          break;
-        }
-
-        mCurrentEval = score;
+        mLastBestMove = pvTable[0][0];
         mCurrentDepth++;
     }
     std::cout << "search end" << std::endl;
+
     return mLastBestMove;
 }
 
@@ -234,7 +274,7 @@ int Engine::getDepth() {
 Engine::Engine() {
   mCurrentDepth = 0;
   mCurrentEval = 0;
-  mDepth = 1;
+  mDepth = 15;
   mTimeSpentMs = 0;
 }
 
