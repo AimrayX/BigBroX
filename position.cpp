@@ -124,7 +124,6 @@ uint64_t Position::getPseudoLegalMoves(int square, int type, Color color) {
   return (attackGeneration(square, type, color) & ~occupancies[color]);
 }
 
-// Check if 'square' is attacked by pieces of 'sideAttacking'
 bool Position::isSquareAttacked(int square, Color sideAttacking) {
     Color defendingSide = (sideAttacking == WHITE) ? BLACK : WHITE;
     if (attack::pawnAttacks[defendingSide][square] & pieces[sideAttacking][PAWN]) {
@@ -264,14 +263,11 @@ void Position::doMove(Move m) {
     occupancies[BLACK] = pieces[BLACK][PAWN] | pieces[BLACK][KNIGHT] | pieces[BLACK][BISHOP] | pieces[BLACK][QUEEN] | pieces[BLACK][KING] | pieces[BLACK][ROOK];
     occupancies[2] = occupancies[WHITE] | occupancies[BLACK];
 
-    // --- UPDATE CASTLING RIGHTS ---
-    // FIXED: The logic was inverted - when WHITE king moves, remove WHITE's rights
     if (state.movedPiece == KING) {
         if (mSideToMove == WHITE) mCastleRight &= ~(WHITE_OO | WHITE_OOO); 
         else                      mCastleRight &= ~(BLACK_OO | BLACK_OOO);
     }
 
-    // 2. If Rook moves, lose rights for that side
     if (state.movedPiece == ROOK) {
         if (m.from == 0)       mCastleRight &= ~WHITE_OOO;
         else if (m.from == 7)  mCastleRight &= ~WHITE_OO;
@@ -279,7 +275,6 @@ void Position::doMove(Move m) {
         else if (m.from == 63) mCastleRight &= ~BLACK_OO;
     }
 
-    // 3. If Rook is captured, opponent loses rights for that side
     if (state.capturedPiece == ROOK) {
         if (m.to == 0)       mCastleRight &= ~WHITE_OOO;
         else if (m.to == 7)  mCastleRight &= ~WHITE_OO;
@@ -287,7 +282,6 @@ void Position::doMove(Move m) {
         else if (m.to == 63) mCastleRight &= ~BLACK_OO;
     }
 
-    // Switch sides
     mSideToMove = (mSideToMove == WHITE) ? BLACK : WHITE;
 
     history.push_back(state);
@@ -350,7 +344,6 @@ void Position::undoMove(Move m) {
         }
     }
 
-    // Update bitboards
     occupancies[WHITE] = pieces[WHITE][PAWN] | pieces[WHITE][KNIGHT] |  pieces[WHITE][BISHOP] | pieces[WHITE][QUEEN] | pieces[WHITE][KING] | pieces[WHITE][ROOK];
 
     occupancies[BLACK] = pieces[BLACK][PAWN] | pieces[BLACK][KNIGHT] |  pieces[BLACK][BISHOP] | pieces[BLACK][QUEEN] | pieces[BLACK][KING] | pieces[BLACK][ROOK];

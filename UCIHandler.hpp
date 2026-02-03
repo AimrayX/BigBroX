@@ -33,7 +33,6 @@ public:
     std::string currentCommand;
 
     int loop();
-    void getEngineState();
 
     UCIHandler(/* args */);
     ~UCIHandler();

@@ -202,7 +202,7 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
 }
 
 Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
-    pos.printBoard();
+    //pos.printBoard();
 
     mStartTime = std::chrono::steady_clock::now();
     mTimeAllocated = timeLimitMs;
@@ -272,12 +272,10 @@ Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
 }
 
 int Engine::evaluate(Position& pos) {
-  // 1. Define piece values (Standard: P=100, N=300, etc.)
-    // Note: King is given a huge value to ensure the engine protects it above all else.
     static const int pieceValues[] = {
         100,   // PAWN
         300,   // KNIGHT
-        320,   // BISHOP (slightly more than knight is common)
+        320,   // BISHOP
         500,   // ROOK
         900,   // QUEEN
         20000  // KING
@@ -285,13 +283,33 @@ int Engine::evaluate(Position& pos) {
 
     int score = 0;
 
-    // 2. Sum up material for both sides
+    // 2. Sum up material and positional advantage for both sides
     for (int p = 0; p < 6; p++) {
-        // __builtin_popcountll counts the number of '1' bits (pieces) in the bitboard
-        int whiteCount = __builtin_popcountll(pos.pieces[WHITE][p]);
-        int blackCount = __builtin_popcountll(pos.pieces[BLACK][p]);
+        uint64_t bitboard = pos.pieces[WHITE][p]; 
 
-        score += pieceValues[p] * (whiteCount - blackCount);
+        while (bitboard) {
+            int square = __builtin_ctzll(bitboard);
+
+            score += pieceValues[p];
+
+            score += PST[p][square]; 
+
+          bitboard &= (bitboard - 1);
+        }
+    }
+
+    for (int p = 0; p < 6; p++) {
+        uint64_t bitboard = pos.pieces[BLACK][p]; 
+
+        while (bitboard) {
+            int square = __builtin_ctzll(bitboard);
+
+            score -= pieceValues[p];
+
+            score -= PST[p][square ^ 56]; 
+
+          bitboard &= (bitboard - 1);
+        }
     }
 
     // 3. Return score from the perspective of the side to move

@@ -176,7 +176,7 @@ int UCIHandler::loop() {
             int allocatedTime = movetime;
             if(!movetime) allocatedTime = (game.position.mSideToMove == WHITE) ? ((wtime / 30) + winc) : ((btime / 30) + binc);
             allocatedTime = std::max(10, allocatedTime -50);
-            std::cout << "allocated Time: " << allocatedTime << std::endl;
+            //std::cout << "allocated Time: " << allocatedTime << std::endl;
             t1 = std::jthread([this, allocatedTime](std::stop_token st) {game.engine.search(game.position, allocatedTime, st);});
             break;
           }
@@ -197,11 +197,6 @@ int UCIHandler::loop() {
   return 0;
 }
 
-void UCIHandler::getEngineState() {
-    std::cout << "info depth " << std::to_string(game.engine.mCurrentDepth.load()) << std::endl;
-    std::cout << "info score cp " << std::to_string(game.engine.mCurrentEval.load()) << std::endl;
-    std::cout << "info time " << std::to_string(game.engine.mTimeSpentMs.load()) << std::endl;
-}
 
 UCIHandler::UCIHandler(/* args */) {
     state = 0;

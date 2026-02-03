@@ -29,7 +29,7 @@ public:
     uint64_t pieces[2][6];
     uint64_t occupancies[3];
     int board[64];
-    
+
     std::vector<StateInfo> history;
 
     uint64_t attackGeneration(int square, int type, Color color);
