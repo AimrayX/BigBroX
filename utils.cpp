@@ -22,10 +22,28 @@ Move util::parseUCIMove(const std::string& uci) {
     return m;
 }
 
+
 std::string util::squareToString(int sq) {
     char file = 'a' + (sq % 8);
     char rank = '1' + (sq / 8);
     return std::string{file, rank};
+}
+
+std::string util::moveToString(const Move& m) {
+  std::string s = squareToString(m.from) + squareToString(m.to);
+
+    if (m.promotion != NOPIECE) {
+        char p = ' ';
+        switch (m.promotion) {
+            case QUEEN:  p = 'q'; break;
+            case ROOK:   p = 'r'; break;
+            case BISHOP: p = 'b'; break;
+            case KNIGHT: p = 'n'; break;
+            default: break; 
+        }
+        if (p != ' ') s += p;
+    }
+    return s;
 }
 
 uint64_t util::mAlgebraicToBit(const std::string& alge) {

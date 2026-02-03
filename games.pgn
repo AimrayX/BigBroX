@@ -1,0 +1,76 @@
+[Event "?"]
+[Site "?"]
+[Date "2026.02.03"]
+[Round "1"]
+[White "MyEngine_White"]
+[Black "MyEngine_Black"]
+[Result "0-1"]
+[ECO "A00"]
+[GameDuration "00:00:04"]
+[GameEndTime "2026-02-03T14:36:31.716 CET"]
+[GameStartTime "2026-02-03T14:36:27.544 CET"]
+[Opening "Anderssen's Opening"]
+[PlyCount "4"]
+[Termination "illegal move"]
+[TimeControl "10+1"]
+
+1. a3 {0.00/7 1.3s} a5 {0.00/6 1.3s} 2. b3 {0.00/5 1.3s}
+b5 {-10000.00/1000 0.057s, White makes an illegal move: c7d8q} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2026.02.03"]
+[Round "2"]
+[White "MyEngine_Black"]
+[Black "MyEngine_White"]
+[Result "0-1"]
+[ECO "A00"]
+[GameDuration "00:00:04"]
+[GameEndTime "2026-02-03T14:36:35.883 CET"]
+[GameStartTime "2026-02-03T14:36:31.717 CET"]
+[Opening "Anderssen's Opening"]
+[PlyCount "4"]
+[Termination "illegal move"]
+[TimeControl "10+1"]
+
+1. a3 {0.00/7 1.3s} a5 {0.00/6 1.3s} 2. b3 {0.00/5 1.3s}
+b5 {-10000.00/1000 0.056s, White makes an illegal move: c7d8q} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2026.02.03"]
+[Round "1"]
+[White "MyEngine_White"]
+[Black "MyEngine_Black"]
+[Result "1-0"]
+[ECO "A00"]
+[GameDuration "00:00:05"]
+[GameEndTime "2026-02-03T15:35:56.230 CET"]
+[GameStartTime "2026-02-03T15:35:51.211 CET"]
+[Opening "Anderssen's Opening"]
+[PlyCount "3"]
+[Termination "illegal move"]
+[TimeControl "10+1"]
+
+1. a3 {0.00/7 1.3s} a5 {-3.20/7 1.3s}
+2. b3 {0.00/5 1.3s, Black makes an illegal move: d2c1q} 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "2026.02.03"]
+[Round "2"]
+[White "MyEngine_Black"]
+[Black "MyEngine_White"]
+[Result "0-1"]
+[ECO "A00"]
+[GameDuration "00:00:06"]
+[GameEndTime "2026-02-03T15:36:02.774 CET"]
+[GameStartTime "2026-02-03T15:35:56.231 CET"]
+[Opening "Anderssen's Opening"]
+[PlyCount "4"]
+[Termination "illegal move"]
+[TimeControl "10+1"]
+
+1. a3 {0.00/7 1.3s} a5 {0.00/6 1.3s} 2. c3 {+3.20/6 1.3s}
+Ra6 {-3.20/6 1.3s, White makes an illegal move: b7c8q} 0-1
+

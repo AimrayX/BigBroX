@@ -1,0 +1,3 @@
+/home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir
+/home/aimray/Projects/BigBroX/CMakeFiles/edit_cache.dir
+/home/aimray/Projects/BigBroX/CMakeFiles/rebuild_cache.dir

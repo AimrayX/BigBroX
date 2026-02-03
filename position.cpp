@@ -17,7 +17,7 @@ int Position::setStartingPosition(std::string startingPosition) {
     }
 
     for(int k = 0; k < 64; k++) {
-      board[k] = 0;
+      board[k] = NOPIECE;
     }
 
     occupancies[0] = 0ULL; 
@@ -95,15 +95,6 @@ int Position::setStartingPosition(std::string startingPosition) {
     if (std::getline(iss, temp, ' ')) mHalfMove = std::stoi(temp);
     if (std::getline(iss, temp, ' ')) mFullMove = std::stoi(temp); 
 
-    printBoard();
-
-    // Handle additional moves (UCI "position startpos moves e2e4 ...")
-    while (iss >> temp) {
-        doMove(util::parseUCIMove(temp));
-    }
-
-    printBoard();
-
     return 0;
 }
 
@@ -176,7 +167,7 @@ void Position::doMove(Move m) {
     if (startBit & pieces[mSideToMove][ROOK]) {
         pieces[mSideToMove][ROOK] &= ~startBit;
         pieces[mSideToMove][ROOK] |= endBit; 
-        board[m.from] = 0;
+        board[m.from] = NOPIECE;
         board[m.to] = ROOK;
         state.movedPiece = ROOK;
         mEnPassentSquare = 0;
@@ -184,7 +175,7 @@ void Position::doMove(Move m) {
     else if (startBit & pieces[mSideToMove][BISHOP]) {
         pieces[mSideToMove][BISHOP] &= ~startBit;
         pieces[mSideToMove][BISHOP] |= endBit;
-        board[m.from] = 0;
+        board[m.from] = NOPIECE;
         board[m.to] = BISHOP;
         state.movedPiece = BISHOP;
         mEnPassentSquare = 0;
@@ -192,7 +183,7 @@ void Position::doMove(Move m) {
     else if (startBit & pieces[mSideToMove][QUEEN]) {
         pieces[mSideToMove][QUEEN] &= ~startBit;
         pieces[mSideToMove][QUEEN] |= endBit;
-        board[m.from] = 0;
+        board[m.from] = NOPIECE;
         board[m.to] = QUEEN;
         state.movedPiece = QUEEN;
         mEnPassentSquare = 0;
@@ -200,7 +191,7 @@ void Position::doMove(Move m) {
     else if (startBit & pieces[mSideToMove][KING]) {
         pieces[mSideToMove][KING] &= ~startBit;
         pieces[mSideToMove][KING] |= endBit;
-        board[m.from] = 0;
+        board[m.from] = NOPIECE;
         board[m.to] = KING;
         state.movedPiece = KING;
 
@@ -210,7 +201,7 @@ void Position::doMove(Move m) {
 
             pieces[mSideToMove][ROOK] &= ~rookFrom;
             pieces[mSideToMove][ROOK] |= rookTo;
-            board[m.from] = 0;
+            board[m.from] = NOPIECE;
             board[m.to] = ROOK;
         } 
         else if ((int)m.to - (int)m.from == -2) {
@@ -219,20 +210,20 @@ void Position::doMove(Move m) {
 
             pieces[mSideToMove][ROOK] &= ~rookFrom;
             pieces[mSideToMove][ROOK] |= rookTo;
-            board[m.from] = 0;
+            board[m.from] = NOPIECE;
             board[m.to] = ROOK;
         }
     } 
     else if (startBit & pieces[mSideToMove][KNIGHT]) {
         pieces[mSideToMove][KNIGHT] &= ~startBit;
         pieces[mSideToMove][KNIGHT] |= endBit;
-        board[m.from] = 0;
+        board[m.from] = NOPIECE;
         board[m.to] = KNIGHT;
         state.movedPiece = KNIGHT;
         mEnPassentSquare = 0;
     } else {
         pieces[mSideToMove][PAWN] &= ~startBit;
-        board[m.from] = 0;
+        board[m.from] = NOPIECE;
 
         if (m.promotion == NOPIECE) {
             pieces[mSideToMove][PAWN] |= endBit;
@@ -249,7 +240,7 @@ void Position::doMove(Move m) {
           uint64_t enemyPawnLoc = (1ULL << (m.to + capturedOffset));
 
           pieces[(mSideToMove == WHITE ? BLACK : WHITE)][PAWN] &= ~enemyPawnLoc;
-          board[m.to + capturedOffset] = 0;
+          board[m.to + capturedOffset] = NOPIECE;
         }
 
         if (abs(m.to - m.from) == 16) {
@@ -329,13 +320,13 @@ void Position::undoMove(Move m) {
     if (m.promotion != NOPIECE) {
         pieces[mSideToMove][m.promotion] &= ~(1ULL << m.to);
         pieces[mSideToMove][PAWN] |= (1ULL << m.from);
-        board[m.to] = 0;
+        board[m.to] = NOPIECE;
         board[m.from] = PAWN;
     } 
     else {
         pieces[mSideToMove][oldState.movedPiece] &= ~(1ULL << m.to);
         pieces[mSideToMove][oldState.movedPiece] |= (1ULL << m.from);
-        board[m.to] = 0;
+        board[m.to] = NOPIECE;
         board[m.from] = oldState.movedPiece;
 
         if(oldState.movedPiece == KING) {
@@ -344,7 +335,7 @@ void Position::undoMove(Move m) {
             uint64_t rookTo = (1ULL << (m.to - 1));
             pieces[mSideToMove][ROOK] &= ~rookTo;
             pieces[mSideToMove][ROOK] |= rookFrom;
-            board[m.to - 1] = 0;
+            board[m.to - 1] = NOPIECE;
             board[m.to + 1] = ROOK;
 
           } else if((int)m.to - (int)m.from == -2) {
@@ -352,7 +343,7 @@ void Position::undoMove(Move m) {
             uint64_t rookTo = (1ULL << (m.to + 1));
             pieces[mSideToMove][ROOK] &= ~rookTo;
             pieces[mSideToMove][ROOK] |= rookFrom;
-            board[m.to + 1] = 0;
+            board[m.to + 1] = NOPIECE;
             board[m.to - 2] = ROOK;
 
           }
@@ -461,14 +452,42 @@ void Position::getMoves(Color color, MoveList& moveList) {
 }
 
 void Position::printBoard() {
-    std::cout << "   occupancies both" << std::endl;
+    std::cout << "         board" << std::endl;
     std::cout << "  +-----------------+" << std::endl;
     for (int rank = 7; rank >= 0; rank--) {
-        std::cout << rank + 1 << " | "; // Print Rank Number
+        std::cout << rank + 1 << " | ";
         for (int file = 0; file < 8; file++) {
             int square = rank * 8 + file;
-            if ((occupancies[2] >> square) & 1) {
-                std::cout << "1 ";
+            if ((occupancies[WHITE] >> square) & 1) {
+
+                if(board[square] == PAWN) {
+                  std::cout << "P ";
+                } else if(board[square] == ROOK) {
+                  std::cout << "R ";
+                } else if(board[square] == BISHOP) {
+                  std::cout << "B ";
+                } else if(board[square] == QUEEN) {
+                  std::cout << "Q ";
+                } else if(board[square] == KNIGHT) {
+                  std::cout << "N ";
+                } else if(board[square] == KING) {
+                  std::cout << "K ";
+                }
+            } else if ((occupancies[BLACK] >> square) & 1) {
+
+                if(board[square] == PAWN) {
+                  std::cout << "p ";
+                } else if(board[square] == ROOK) {
+                  std::cout << "r ";
+                } else if(board[square] == BISHOP) {
+                  std::cout << "b ";
+                } else if(board[square] == QUEEN) {
+                  std::cout << "q ";
+                } else if(board[square] == KNIGHT) {
+                  std::cout << "n ";
+                } else if(board[square] == KING) {
+                  std::cout << "k ";
+                }
             } else {
                 std::cout << ". ";
             }
@@ -480,6 +499,17 @@ void Position::printBoard() {
 }
 
 Position::Position() {
+  for(int c = 0; c < 2; c++) {
+        for(int p = 0; p < 6; p++) {
+            pieces[c][p] = 0ULL;
+        }
+    }
+    occupancies[0] = 0ULL;
+    occupancies[1] = 0ULL;
+    occupancies[2] = 0ULL;
+    mSideToMove = WHITE;
+    mCastleRight = 0;
+    mEnPassentSquare = 0;
 }
 Position::~Position() {
 }

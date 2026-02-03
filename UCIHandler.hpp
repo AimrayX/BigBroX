@@ -24,7 +24,6 @@ private:
  * returns the starting position as FEN + moves
  */
     std::string getStartingPosition(std::string commandLine);
-    std::atomic<Move> searchResult;
     std::jthread t1;
 
 public:

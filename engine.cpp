@@ -198,6 +198,8 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
 }
 
 Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
+    pos.printBoard();
+
     mStartTime = std::chrono::steady_clock::now();
     mTimeAllocated = timeLimitMs;
     mStop = false;
@@ -206,8 +208,6 @@ Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
     mLastBestMove = Move();
     mCurrentEval = 0;
     mCurrentDepth = 1;
-
-    std::cout << timeLimitMs << std::endl;
 
     for(int depth = 1; depth <= mDepth; depth++) {
 
@@ -222,14 +222,15 @@ Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
         std::cout << "info depth " << depth << " score cp " << score << " pv";
         for (int i = 0; i < pvLength[0]; i++) {
           Move m = pvTable[0][i];
-          std::cout << " " << util::squareToString(m.from) << util::squareToString(m.to);
+          std::cout << " " << util::moveToString(m);
         }
         std::cout << std::endl;
 
         mLastBestMove = pvTable[0][0];
         mCurrentDepth++;
     }
-    std::cout << "search end" << std::endl;
+    //std::cout << "search end" << std::endl;
+    std::cout << "bestmove " << util::moveToString(mLastBestMove) << std::endl;
 
     return mLastBestMove;
 }

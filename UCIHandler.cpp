@@ -1,5 +1,6 @@
 #include "UCIHandler.hpp"
 
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -9,6 +10,7 @@
 
 #include "attack.hpp"
 #include "types.hpp"
+#include "utils.hpp"
 
 std::string UCIHandler::getStartingPosition(std::string commandLine) {
   std::string fenPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -76,12 +78,69 @@ int UCIHandler::loop() {
             break;
 
           case UCICommand::Position: {
-            std::cout << "info setting starting position" << std::endl;
-            std::string startingPosition = getStartingPosition(line);
-            game.position.setStartingPosition(startingPosition);
+            // 1. Setup Variables
+    std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    std::vector<std::string> moveStrings; // Store moves here temporarily
+    std::string subToken;
+    ss >> subToken; // Read "startpos" or "fen"
+
+    // 2. Determine Base Position
+    if (subToken == "startpos") {
+        std::string buffer;
+        while (ss >> buffer) {
+            if (buffer == "moves") {
+                // Found "moves", read the rest into our vector
+                while (ss >> buffer) moveStrings.push_back(buffer);
+                break;
+            }
+        }
+    } 
+    else if (subToken == "fen") {
+        fen = "";
+        std::string buffer;
+        bool readingFen = true;
+        while (ss >> buffer) {
+            if (buffer == "moves") {
+                readingFen = false;
+                while (ss >> buffer) moveStrings.push_back(buffer);
+                break; 
+            }
+            if (readingFen) {
+                fen += (fen.empty() ? "" : " ") + buffer;
+            }
+        }
+    }
+
+    // 3. Set the Board State (Base)
+        game.position.setStartingPosition(fen);
+
+    // 4. Apply Moves (The Matcher Logic)
+    // This runs for BOTH startpos and fen cases
+    for (const std::string& moveStr : moveStrings) {
+        // A. Parse the simple target coordinates
+        Move target = util::parseUCIMove(moveStr); 
+        // B. Generate legal moves to find the one with correct flags
+        MoveList legalMoves;
+        game.position.getMoves(game.position.mSideToMove, legalMoves);
+        bool found = false;
+        for (int i = 0; i < legalMoves.count; i++) {
+            Move m = legalMoves.moves[i];
+            // C. Match coordinates + promotion
+            if (m.from == target.from && 
+                m.to == target.to && 
+                m.promotion == target.promotion) {
+                game.position.doMove(m); // Apply the fully populated move
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            std::cout << "Debug: Could not match move " << moveStr << std::endl;
+        }
+    }
+
             break;
           }
-
           case UCICommand::Go: {
 
             if (t1.joinable()) t1.request_stop();
@@ -114,25 +173,16 @@ int UCIHandler::loop() {
                 movetime = 100000;
               }
             }
-            int allocatedTime = (game.position.mSideToMove == WHITE) ? ((wtime / 30) + winc) : ((btime / 30) + binc);
-
-            std::cout << "info searching for depth: " << token << std::endl;
-            game.engine.setDepth(std::stoi(token));
-
-            t1 = std::jthread([this, allocatedTime](std::stop_token st) {this->searchResult = game.engine.search(game.position, allocatedTime, st);});
+            int allocatedTime = movetime;
+            if(!movetime) allocatedTime = (game.position.mSideToMove == WHITE) ? ((wtime / 30) + winc) : ((btime / 30) + binc);
+            allocatedTime = std::max(10, allocatedTime -50);
+            std::cout << "allocated Time: " << allocatedTime << std::endl;
+            t1 = std::jthread([this, allocatedTime](std::stop_token st) {game.engine.search(game.position, allocatedTime, st);});
             break;
           }
 
           case UCICommand::Stop: {
-            std::cout << "info stopping engine" << std::endl;
-            t1.request_stop();
-
-            if(t1.joinable()) t1.join();
-
-            std::cout << "info engine stopped retrieving best move" << std::endl;
-            Move finalMove = searchResult.load();
-
-            if(finalMove.to < Squares.size()) std::cout << "bestmove " << Squares.at((int)finalMove.from) <<Squares.at((int)finalMove.to) << std::endl;
+            if(t1.joinable()) { t1.request_stop(); t1.join(); }
             break;
           }
 
