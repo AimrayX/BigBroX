@@ -9,10 +9,10 @@ enum Piece {
 };
 
 enum CastlingRights {
-    WHITE_OO,
-    WHITE_OOO,
-    BLACK_OO,
-    BLACK_OOO
+    WHITE_OO = 1,
+    WHITE_OOO = 2,
+    BLACK_OO = 4,
+    BLACK_OOO = 8
 };
 
 enum Color { 

@@ -36,6 +36,8 @@ private:
     int mTimeAllocated;
     bool mStop;
     long long nodes;
+    Move killerMoves[64][2];
+    int historyMoves[2][64][64];
     static constexpr int PST[6][64] = {
     {
       0,0,0,0,0,0,0,0,
@@ -123,7 +125,7 @@ public:
     void setDepth(int depth);
     int getDepth();
 
-    int scoreMove(const Move& m, Position& pos);
+    int scoreMove(const Move& m, Position& pos, int ply);
     uint64_t mAlgebraicToBit(std::string alge);
     Move search(Position& pos, int timeLimitMs, std::stop_token stoken);
     int evaluate(Position& pos);

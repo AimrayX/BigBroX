@@ -53,9 +53,7 @@ void Engine::pickMove(MoveList& list, int moveNum) {
     }
 }
 
-// engine.cpp
-
-int Engine::scoreMove(const Move& m, Position& pos) {
+int Engine::scoreMove(const Move& m, Position& pos, int ply) {
     int score = 0;
     
     // Look up what pieces are involved using the board array
@@ -64,24 +62,36 @@ int Engine::scoreMove(const Move& m, Position& pos) {
 
     // 1. MVV-LVA for Standard Captures
     if (victim != NOPIECE) {
-        // Add 10000 to ensure captures are searched before quiet moves
         score = 10000 + mvv_lva[victim][attacker];
     }
-    // 2. Handle En Passant (Special case: victim is not on target square)
-    // We check if the target square bit matches the En Passant bitboard
+    // 2. Handle En Passant
     else if (attacker == PAWN && (1ULL << m.to) == pos.mEnPassentSquare) {
         score = 10000 + mvv_lva[PAWN][PAWN];
     }
+    // 3. Killers (CRITICAL FIX HERE)
+    // Check if ply is valid (>= 0) because Quiescence passes -1 to disable this
+    else if (ply >= 0 && ply < MAX_PLY) { 
+        if (m.from == killerMoves[ply][0].from && 
+            m.to == killerMoves[ply][0].to) {
+            score = 9000;
+        }
+        else if (m.from == killerMoves[ply][1].from && 
+            m.to == killerMoves[ply][1].to) {
+            score = 8000;
+        }
+    }
 
-    // 3. Score Promotions
-    // Promoting to a Queen is huge; almost as good as capturing a Rook
+    // 4. Score Promotions
     if (m.promotion != NOPIECE) {
         if (m.promotion == QUEEN) score += 9000;
         else if (m.promotion == KNIGHT) score += 4000;
         else score += 1000;
     }
 
-    // 4. Quiet Moves (History Heuristic would go here later)
+    if (score == 0) {
+        score = historyMoves[pos.mSideToMove][m.from][m.to];
+    }
+
     return score;
 }
 
@@ -116,27 +126,37 @@ int Engine::quiescence(Position& pos, int alpha, int beta, std::stop_token& stok
     MoveList moveList;
     pos.getMoves(pos.mSideToMove, moveList);
 
+    // 1. Score the moves
     for (int i = 0; i < moveList.count; i++) {
-        // --- FILTER: ONLY CAPTURES ---
-        Color enemy = (pos.mSideToMove == WHITE) ? BLACK : WHITE;
-        if (pos.occupancies[enemy] & (1ULL << moveList.moves[i].to)) {
-            pos.doMove(moveList.moves[i]);
-            // Recursively call quiescence
-            int score = -quiescence(pos, -beta, -alpha, stoken);
-            pos.undoMove(moveList.moves[i]);
-
-            if(stoken.stop_requested()) {
-              return 0;
-            }
-
-            if (score >= beta) {
-                return beta;
-            }
-            if (score > alpha) {
-                alpha = score;
-            }
-        }
+        moveList.moves[i].score = scoreMove(moveList.moves[i], pos, -1);
     }
+
+    // 2. Loop and Sort
+    for (int i = 0; i < moveList.count; i++) {
+        // SORTING: Pick the best move first!
+        pickMove(moveList, i);
+        Move move = moveList.moves[i];
+
+        // --- OPTIMIZATION & FIX ---
+        // Quiet moves have a score of 0. 
+        // Captures and Promotions have scores > 1000.
+        // Since the list is sorted, as soon as we hit a 0, we are done!
+        if (move.score < 1000) {
+             break; 
+        }
+
+        // Now we search ALL interesting moves (Captures, En Passant, Promotions)
+        // without needing slow bitwise checks.
+        pos.doMove(move);
+        int score = -quiescence(pos, -beta, -alpha, stoken);
+        pos.undoMove(move);
+
+        if(stoken.stop_requested()) return 0;
+
+        if (score >= beta) return beta;
+        if (score > alpha) alpha = score;
+    }
+
     return alpha;
 }
 
@@ -167,7 +187,7 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
   pos.getMoves(pos.mSideToMove, moveList);
 
   for(int i = 0; i < moveList.count; i++) {
-    moveList.moves[i].score = scoreMove(moveList.moves[i], pos);
+    moveList.moves[i].score = scoreMove(moveList.moves[i], pos, ply);
   }
 
   int bestScore = -INF;
@@ -197,7 +217,6 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
     if(score > bestScore) {
 
       bestScore = score;
-      
       // Always update PV for the best move found so far
       pvTable[ply][ply] = moveList.moves[i];
 
@@ -205,7 +224,6 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
       for(int j = ply + 1; j < pvLength[ply + 1]; j++) {
         pvTable[ply][j] = pvTable[ply + 1][j];
       }
-      
       // PV length includes our move plus the child's PV
       pvLength[ply] = (pvLength[ply + 1] > ply + 1) ? pvLength[ply + 1] : (ply + 1);
 
@@ -215,9 +233,25 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
     }
 
     if(alpha >= beta) {
+      if (pos.board[moveList.moves[i].to] == NOPIECE) {
+          int mover = (pos.mSideToMove == WHITE) ? WHITE : BLACK;
+          int from = moveList.moves[i].from;
+          int to = moveList.moves[i].to;
+
+          int bonus = depth * depth;
+
+          if (historyMoves[mover][from][to] < 5000) {
+              historyMoves[mover][from][to] += bonus;
+          }
+
+          if (ply >= 0 && ply < MAX_PLY) {
+            killerMoves[ply][1] = killerMoves[ply][0];
+            killerMoves[ply][0] = moveList.moves[i];
+          }
+      }
       break;
     }
-  }
+}
 
   if (movesSearched == 0) {
       int kingSq = __builtin_ctzll(pos.pieces[pos.mSideToMove][KING]);
@@ -234,7 +268,7 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
 }
 
 Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
-    //pos.printBoard();
+    pos.printBoard();
 
     mStartTime = std::chrono::steady_clock::now();
     mTimeAllocated = timeLimitMs;
@@ -244,6 +278,19 @@ Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
     mLastBestMove = Move();
     mCurrentEval = 0;
     mCurrentDepth = 1;
+ 
+    for (int c = 0; c < 2; c++) {
+      for (int f = 0; f < 64; f++) {
+        for (int t = 0; t < 64; t++) {
+            historyMoves[c][f][t] = 0;
+        }
+      }
+    }
+
+    for(int i=0; i<MAX_PLY; i++) {
+      killerMoves[i][0] = Move();
+      killerMoves[i][1] = Move();
+    }
 
     for(int depth = 1; depth <= mDepth; depth++) {
 

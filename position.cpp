@@ -193,6 +193,7 @@ void Position::doMove(Move m) {
         board[m.from] = NOPIECE;
         board[m.to] = KING;
         state.movedPiece = KING;
+        mEnPassentSquare = 0;
 
         if ((int)m.to - (int)m.from == 2) { 
             uint64_t rookFrom = (1ULL << (m.to + 1));
