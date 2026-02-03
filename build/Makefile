@@ -273,6 +273,30 @@ position.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/chess_engine.dir/build.make CMakeFiles/chess_engine.dir/position.cpp.s
 .PHONY : position.cpp.s
 
+transposition.o: transposition.cpp.o
+.PHONY : transposition.o
+
+# target to build an object file
+transposition.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chess_engine.dir/build.make CMakeFiles/chess_engine.dir/transposition.cpp.o
+.PHONY : transposition.cpp.o
+
+transposition.i: transposition.cpp.i
+.PHONY : transposition.i
+
+# target to preprocess a source file
+transposition.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chess_engine.dir/build.make CMakeFiles/chess_engine.dir/transposition.cpp.i
+.PHONY : transposition.cpp.i
+
+transposition.s: transposition.cpp.s
+.PHONY : transposition.s
+
+# target to generate assembly for a file
+transposition.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chess_engine.dir/build.make CMakeFiles/chess_engine.dir/transposition.cpp.s
+.PHONY : transposition.cpp.s
+
 utils.o: utils.cpp.o
 .PHONY : utils.o
 
@@ -324,6 +348,9 @@ help:
 	@echo "... position.o"
 	@echo "... position.i"
 	@echo "... position.s"
+	@echo "... transposition.o"
+	@echo "... transposition.i"
+	@echo "... transposition.s"
 	@echo "... utils.o"
 	@echo "... utils.i"
 	@echo "... utils.s"

@@ -29,6 +29,10 @@ public:
     uint64_t pieces[2][6];
     uint64_t occupancies[3];
     int board[64];
+    
+    uint64_t mHash;
+
+    uint64_t getHash() const { return mHash; }
 
     std::vector<StateInfo> history;
 

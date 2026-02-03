@@ -9,29 +9,6 @@
 
 const int INF = 1000000;
 
-ZobristHashing::ZobristHashing(int numPieces) {
-        std::random_device rd;
-        std::mt19937_64 gen(rd());
-        std::uniform_int_distribution<uint64_t> dis;
-
-        for (int i = 0; i < numPieces; ++i) {
-            pieceHashes[i] = std::vector<uint64_t>(64);
-            for (int j = 0; j < 64; ++j) {
-                pieceHashes[i][j] = dis(gen);
-            }
-        }
-        currentHash = 0;
-    }
-
-void ZobristHashing::movePiece(int piece, int from, int to) {
-    currentHash ^= pieceHashes[piece][from];
-    currentHash ^= pieceHashes[piece][to];
-}
-
-uint64_t ZobristHashing::getHash() const {
-    return currentHash;
-}
-
 void Engine::pickMove(MoveList& list, int moveNum) {
     int bestIndex = -1;
     int bestScore = -1000000;
@@ -179,6 +156,17 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
   int ply = mCurrentDepth -depth;
   pvLength[ply] = ply;
 
+  // --- TT PROBE ---
+    int ttScore;
+    Move ttMove = Move();
+    // Try to retrieve a cutoff score
+    if (tt.probe(pos.getHash(), depth, ply, alpha, beta, ttScore, ttMove)) {
+        // If we get a valid cutoff (exact, beta, or alpha), we can return immediately!
+        // Exception: If we are at the root (ply 0), we usually want to search to ensure we have a PV, 
+        // unless it's a mate score. For simplicity, we return here.
+        if (ply > 0) return ttScore; 
+    }
+
   if(depth == 0) {
     return quiescence(pos, alpha, beta, stoken);
   }
@@ -186,11 +174,21 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
   MoveList moveList;
   pos.getMoves(pos.mSideToMove, moveList);
 
-  for(int i = 0; i < moveList.count; i++) {
-    moveList.moves[i].score = scoreMove(moveList.moves[i], pos, ply);
+  for (int i = 0; i < moveList.count; i++) {
+        if (ttMove.from != 0 && // Check if ttMove is valid
+            moveList.moves[i].from == ttMove.from &&
+            moveList.moves[i].to == ttMove.to) {
+
+            moveList.moves[i].score = 2000000; // Higher than any capture
+            break; 
+        } else {
+             moveList.moves[i].score = scoreMove(moveList.moves[i], pos, ply);
+        }
   }
 
   int bestScore = -INF;
+  Move bestMove = Move();
+  int originalAlpha = alpha;
   int movesSearched = 0;
 
   for(int i = 0; i < moveList.count; i++) {
@@ -249,7 +247,9 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
             killerMoves[ply][0] = moveList.moves[i];
           }
       }
-      break;
+      tt.store(pos.getHash(), depth, ply, beta, TT_BETA, moveList.moves[i]);
+
+      return beta;
     }
 }
 
@@ -258,18 +258,25 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
 
       Color opponent = (pos.mSideToMove == WHITE) ? BLACK : WHITE;
       if (pos.isSquareAttacked(kingSq, opponent)) {
-          return -INF + (mDepth - depth);
+          return -INF + ply;
       } else {
           return 0;
       }
   }
+    TTFlag flag = TT_ALPHA;
+    if (bestScore > originalAlpha) {
+        flag = TT_EXACT;
+    }
 
+    tt.store(pos.getHash(), depth, ply, bestScore, flag, bestMove);
+  
   return bestScore;
 }
 
 Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
-    pos.printBoard();
+    //pos.printBoard();
 
+    //tt.clear()
     mStartTime = std::chrono::steady_clock::now();
     mTimeAllocated = timeLimitMs;
     mStop = false;
@@ -405,7 +412,7 @@ int Engine::getDepth() {
     return mDepth;
 }
 
-Engine::Engine() {
+Engine::Engine() : tt(64) {
   mCurrentDepth = 0;
   mCurrentEval = 0;
   mDepth = 15;
@@ -423,10 +430,3 @@ Engine::Engine() {
 Engine::~Engine() {
 }
 
-ZobristHashing::ZobristHashing() {
-
-}
-
-ZobristHashing::~ZobristHashing() {
-    
-}

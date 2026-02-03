@@ -3,11 +3,48 @@
 #include <cstdint>
 #include <sstream>
 #include <iostream>
+#include <random>
 
 #include "types.hpp"
 #include "utils.hpp"
 #include "attack.hpp"
 
+// =============================================================
+// 1. Define Zobrist Keys (Global/Namespace to this file)
+// =============================================================
+namespace Zobrist {
+    uint64_t pieceKeys[2][6][64]; // [Color][Piece][Square]
+    uint64_t enPassantKeys[64];   // [Square]
+    uint64_t castleKeys[16];      // [CastleRights Mask]
+    uint64_t sideKey;             // XORed if Black to move
+    bool initialized = false;
+
+    // Initialize keys with random numbers
+    void init() {
+        if (initialized) return;
+        
+        std::mt19937_64 gen(123456789); // Fixed seed for reproducibility
+        std::uniform_int_distribution<uint64_t> dist;
+
+        for (int c = 0; c < 2; c++) {
+            for (int p = 0; p < 6; p++) {
+                for (int s = 0; s < 64; s++) {
+                    pieceKeys[c][p][s] = dist(gen);
+                }
+            }
+        }
+
+        for (int i = 0; i < 64; i++) enPassantKeys[i] = dist(gen);
+        for (int i = 0; i < 16; i++) castleKeys[i] = dist(gen);
+        sideKey = dist(gen);
+        
+        initialized = true;
+    }
+}
+
+// =============================================================
+// 3. setStartingPosition (Calculate fresh hash)
+// =============================================================
 int Position::setStartingPosition(std::string startingPosition) {
     // Clear existing state first
     for(int c = 0; c < 2; c++) {
@@ -23,6 +60,8 @@ int Position::setStartingPosition(std::string startingPosition) {
     occupancies[0] = 0ULL; 
     occupancies[1] = 0ULL; 
     occupancies[2] = 0ULL;
+
+    mHash = 0ULL;
 
     int rank = 7;
     int file = 0;
@@ -95,6 +134,36 @@ int Position::setStartingPosition(std::string startingPosition) {
     if (std::getline(iss, temp, ' ')) mHalfMove = std::stoi(temp);
     if (std::getline(iss, temp, ' ')) mFullMove = std::stoi(temp); 
 
+    // 1. Pieces
+    for (int p = 0; p < 6; p++) {
+        uint64_t w = pieces[WHITE][p];
+        while (w) {
+            int sq = __builtin_ctzll(w);
+            mHash ^= Zobrist::pieceKeys[WHITE][p][sq];
+            w &= (w - 1);
+        }
+        uint64_t b = pieces[BLACK][p];
+        while (b) {
+            int sq = __builtin_ctzll(b);
+            mHash ^= Zobrist::pieceKeys[BLACK][p][sq];
+            b &= (b - 1);
+        }
+    }
+
+    // 2. En Passant
+    if (mEnPassentSquare) {
+        int sq = __builtin_ctzll(mEnPassentSquare);
+        mHash ^= Zobrist::enPassantKeys[sq];
+    }
+
+    // 3. Castle Rights
+    mHash ^= Zobrist::castleKeys[mCastleRight];
+
+    // 4. Side to Move
+    if (mSideToMove == BLACK) {
+        mHash ^= Zobrist::sideKey;
+    }
+
     return 0;
 }
 
@@ -159,16 +228,40 @@ void Position::doMove(Move m) {
     state.halfMove = mHalfMove;
     state.capturedPiece = NOPIECE;
     state.movedPiece = NOPIECE;
+    state.zobristKey = mHash;
+
+    if (mEnPassentSquare) {
+        mHash ^= Zobrist::enPassantKeys[__builtin_ctzll(mEnPassentSquare)];
+    }
+    mHash ^= Zobrist::castleKeys[mCastleRight];
+    mHash ^= Zobrist::sideKey;
 
     uint64_t startBit = (1ULL << m.from);
     uint64_t endBit   = (1ULL << m.to); 
+
+    // Identify moved piece type
+    int pieceType = NOPIECE;
+    if (startBit & pieces[mSideToMove][PAWN]) pieceType = PAWN;
+    else if (startBit & pieces[mSideToMove][KNIGHT]) pieceType = KNIGHT;
+    else if (startBit & pieces[mSideToMove][BISHOP]) pieceType = BISHOP;
+    else if (startBit & pieces[mSideToMove][ROOK]) pieceType = ROOK;
+    else if (startBit & pieces[mSideToMove][QUEEN]) pieceType = QUEEN;
+    else if (startBit & pieces[mSideToMove][KING]) pieceType = KING;
+    state.movedPiece = pieceType;
+
+    // Remove source piece from Hash
+    mHash ^= Zobrist::pieceKeys[mSideToMove][pieceType][m.from];
+    // Add destination piece to Hash (if no promotion)
+    // If promotion, we handle it specifically below.
+    if (m.promotion == NOPIECE) {
+        mHash ^= Zobrist::pieceKeys[mSideToMove][pieceType][m.to];
+    }
 
     if (startBit & pieces[mSideToMove][ROOK]) {
         pieces[mSideToMove][ROOK] &= ~startBit;
         pieces[mSideToMove][ROOK] |= endBit; 
         board[m.from] = NOPIECE;
         board[m.to] = ROOK;
-        state.movedPiece = ROOK;
         mEnPassentSquare = 0;
     } 
     else if (startBit & pieces[mSideToMove][BISHOP]) {
@@ -176,7 +269,6 @@ void Position::doMove(Move m) {
         pieces[mSideToMove][BISHOP] |= endBit;
         board[m.from] = NOPIECE;
         board[m.to] = BISHOP;
-        state.movedPiece = BISHOP;
         mEnPassentSquare = 0;
     } 
     else if (startBit & pieces[mSideToMove][QUEEN]) {
@@ -184,7 +276,13 @@ void Position::doMove(Move m) {
         pieces[mSideToMove][QUEEN] |= endBit;
         board[m.from] = NOPIECE;
         board[m.to] = QUEEN;
-        state.movedPiece = QUEEN;
+        mEnPassentSquare = 0;
+    } 
+    else if (startBit & pieces[mSideToMove][KNIGHT]) {
+        pieces[mSideToMove][KNIGHT] &= ~startBit;
+        pieces[mSideToMove][KNIGHT] |= endBit;
+        board[m.from] = NOPIECE;
+        board[m.to] = KNIGHT;
         mEnPassentSquare = 0;
     } 
     else if (startBit & pieces[mSideToMove][KING]) {
@@ -192,7 +290,6 @@ void Position::doMove(Move m) {
         pieces[mSideToMove][KING] |= endBit;
         board[m.from] = NOPIECE;
         board[m.to] = KING;
-        state.movedPiece = KING;
         mEnPassentSquare = 0;
 
         if ((int)m.to - (int)m.from == 2) { 
@@ -204,6 +301,9 @@ void Position::doMove(Move m) {
 
             board[m.to + 1] = NOPIECE;
             board[m.to - 1] = ROOK;
+
+            mHash ^= Zobrist::pieceKeys[mSideToMove][ROOK][m.to + 1];
+            mHash ^= Zobrist::pieceKeys[mSideToMove][ROOK][m.to - 1];
         } 
         else if ((int)m.to - (int)m.from == -2) {
             uint64_t rookFrom = (1ULL << (m.to - 2));
@@ -214,15 +314,10 @@ void Position::doMove(Move m) {
 
             board[m.to - 2] = NOPIECE;
             board[m.to + 1] = ROOK;
+
+            mHash ^= Zobrist::pieceKeys[mSideToMove][ROOK][m.to - 2];
+            mHash ^= Zobrist::pieceKeys[mSideToMove][ROOK][m.to + 1];
         }
-    } 
-    else if (startBit & pieces[mSideToMove][KNIGHT]) {
-        pieces[mSideToMove][KNIGHT] &= ~startBit;
-        pieces[mSideToMove][KNIGHT] |= endBit;
-        board[m.from] = NOPIECE;
-        board[m.to] = KNIGHT;
-        state.movedPiece = KNIGHT;
-        mEnPassentSquare = 0;
     } else {
         pieces[mSideToMove][PAWN] &= ~startBit;
         board[m.from] = NOPIECE;
@@ -233,16 +328,19 @@ void Position::doMove(Move m) {
         } else {
             pieces[mSideToMove][m.promotion] |= endBit;
             board[m.to] = m.promotion;
+            mHash ^= Zobrist::pieceKeys[mSideToMove][m.promotion][m.to];
         }
 
         if(endBit == mEnPassentSquare) {
           Color enemyColor = (mSideToMove == WHITE) ? BLACK : WHITE;
           int captureOffset = (mSideToMove == WHITE) ? -8 : 8;
-          pieces[enemyColor][PAWN] &= ~(1ULL << (m.to + captureOffset));
-          board[m.to + captureOffset] = NOPIECE;
-        }
+          int captureSq = m.to + captureOffset;
 
-        state.movedPiece = PAWN;
+          pieces[enemyColor][PAWN] &= ~(1ULL << captureSq);
+          board[captureSq] = NOPIECE;
+
+          mHash ^= Zobrist::pieceKeys[enemyColor][PAWN][captureSq];
+        }
 
         if(abs((int)m.to - (int)m.from) == 16) {
           int eP = (mSideToMove == WHITE) ? (m.from + 8) : (m.from - 8);
@@ -257,6 +355,7 @@ void Position::doMove(Move m) {
       if(endBit & pieces[enemy][i]) {
         pieces[enemy][i] &= ~endBit;
         state.capturedPiece = i;
+        mHash ^= Zobrist::pieceKeys[enemy][i][m.to];
         break;
       }
     }
@@ -283,7 +382,13 @@ void Position::doMove(Move m) {
         else if (m.to == 63) mCastleRight &= ~BLACK_OO;
     }
 
-    mSideToMove = (mSideToMove == WHITE) ? BLACK : WHITE;
+    if (mEnPassentSquare) {
+        mHash ^= Zobrist::enPassantKeys[__builtin_ctzll(mEnPassentSquare)];
+    }
+    mHash ^= Zobrist::castleKeys[mCastleRight];
+
+    // Switch side
+    mSideToMove = enemy;
 
     history.push_back(state);
 }
@@ -295,6 +400,8 @@ void Position::undoMove(Move m) {
   mCastleRight = oldState.castle;
   mEnPassentSquare = oldState.epSquare;
   mHalfMove = oldState.halfMove;
+
+  mHash = oldState.zobristKey;
 
     mSideToMove = (mSideToMove == WHITE) ? BLACK : WHITE;
 
@@ -479,6 +586,8 @@ void Position::printBoard() {
 }
 
 Position::Position() {
+  Zobrist::init();
+
   for(int c = 0; c < 2; c++) {
         for(int p = 0; p < 6; p++) {
             pieces[c][p] = 0ULL;
@@ -490,6 +599,7 @@ Position::Position() {
     mSideToMove = WHITE;
     mCastleRight = 0;
     mEnPassentSquare = 0;
+    mHash = 0ULL;
 }
 Position::~Position() {
 }

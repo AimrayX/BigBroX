@@ -22,6 +22,8 @@ add_executable(chess_engine
     utils.cpp
     utils.hpp
     types.hpp
+    transposition.cpp
+    transposition.hpp
 )
 
 target_include_directories(chess_engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

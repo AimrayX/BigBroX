@@ -21,6 +21,12 @@ enum Color {
     COLOR_NB 
 };
 
+enum TTFlag {
+  TT_EXACT,
+  TT_ALPHA,
+  TT_BETA
+};
+
 struct Move {
     uint8_t from;
     uint8_t to;
@@ -55,6 +61,8 @@ struct StateInfo {
   int castle;
   uint64_t epSquare;
   int halfMove;
+
+  uint64_t zobristKey;
 };
 
 inline constexpr std::array<std::string_view, 64> Squares = {

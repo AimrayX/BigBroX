@@ -14,6 +14,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/aimray/Projects/BigBroX/game.cpp" "CMakeFiles/chess_engine.dir/game.cpp.o" "gcc" "CMakeFiles/chess_engine.dir/game.cpp.o.d"
   "/home/aimray/Projects/BigBroX/main.cpp" "CMakeFiles/chess_engine.dir/main.cpp.o" "gcc" "CMakeFiles/chess_engine.dir/main.cpp.o.d"
   "/home/aimray/Projects/BigBroX/position.cpp" "CMakeFiles/chess_engine.dir/position.cpp.o" "gcc" "CMakeFiles/chess_engine.dir/position.cpp.o.d"
+  "/home/aimray/Projects/BigBroX/transposition.cpp" "CMakeFiles/chess_engine.dir/transposition.cpp.o" "gcc" "CMakeFiles/chess_engine.dir/transposition.cpp.o.d"
   "/home/aimray/Projects/BigBroX/utils.cpp" "CMakeFiles/chess_engine.dir/utils.cpp.o" "gcc" "CMakeFiles/chess_engine.dir/utils.cpp.o.d"
   "" "chess_engine" "gcc" "CMakeFiles/chess_engine.dir/link.d"
   )

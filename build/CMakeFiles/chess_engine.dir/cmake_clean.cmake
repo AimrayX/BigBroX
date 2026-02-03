@@ -12,6 +12,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/chess_engine.dir/main.cpp.o.d"
   "CMakeFiles/chess_engine.dir/position.cpp.o"
   "CMakeFiles/chess_engine.dir/position.cpp.o.d"
+  "CMakeFiles/chess_engine.dir/transposition.cpp.o"
+  "CMakeFiles/chess_engine.dir/transposition.cpp.o.d"
   "CMakeFiles/chess_engine.dir/utils.cpp.o"
   "CMakeFiles/chess_engine.dir/utils.cpp.o.d"
   "chess_engine"

@@ -1,32 +1,13 @@
 #pragma once
 
 #include "position.hpp"
+#include "transposition.hpp"
 
 #include <cstdint>
 #include <string>
 #include <stdint.h>
-#include <vector>
-#include <unordered_map>
 #include <stop_token>
 #include <atomic>
-
-
-class ZobristHashing {
-private:
-    std::unordered_map<int, std::vector<uint64_t>> pieceHashes;
-    uint64_t currentHash;
-
-public:
-    ZobristHashing(int numPieces);
-
-    void movePiece(int piece, int from, int to);
-
-    uint64_t getHash() const;
-
-    ZobristHashing();
-    ~ZobristHashing();
-};
-
 
 class Engine
 {
@@ -121,6 +102,7 @@ public:
     static const int MAX_PLY = 64;
     Move pvTable[MAX_PLY][MAX_PLY]; 
     int pvLength[MAX_PLY];
+    TranspositionTable tt;
 
     void setDepth(int depth);
     int getDepth();
@@ -132,8 +114,6 @@ public:
     int quiescence(Position& pos, int alpha, int beta, std::stop_token& stoken);
     int negaMax(Position& pos, int depth, int alpha, int beta, std::stop_token& stoken);
     void pickMove(MoveList& list, int moveNum);
-
-    ZobristHashing zobristHashing;
 
     Engine();
     ~Engine();
