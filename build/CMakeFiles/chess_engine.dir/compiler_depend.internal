@@ -9,6 +9,7 @@ CMakeFiles/chess_engine.dir/UCIHandler.cpp.o
  /home/aimray/Projects/BigBroX/game.hpp
  /home/aimray/Projects/BigBroX/position.hpp
  /home/aimray/Projects/BigBroX/types.hpp
+ /home/aimray/Projects/BigBroX/utils.hpp
  /usr/include/alloca.h
  /usr/include/asm-generic/bitsperlong.h
  /usr/include/asm-generic/errno-base.h
@@ -52,7 +53,9 @@ CMakeFiles/chess_engine.dir/UCIHandler.cpp.o
  /usr/include/bits/stdint-intn.h
  /usr/include/bits/stdint-least.h
  /usr/include/bits/stdint-uintn.h
+ /usr/include/bits/stdio.h
  /usr/include/bits/stdio_lim.h
+ /usr/include/bits/stdlib-bsearch.h
  /usr/include/bits/stdlib-float.h
  /usr/include/bits/struct_mutex.h
  /usr/include/bits/struct_rwlock.h
@@ -97,10 +100,12 @@ CMakeFiles/chess_engine.dir/UCIHandler.cpp.o
  /usr/include/bits/wctype-wchar.h
  /usr/include/bits/wordsize.h
  /usr/include/bits/xopen_lim.h
+ /usr/include/c++/15/algorithm
  /usr/include/c++/15/array
  /usr/include/c++/15/atomic
  /usr/include/c++/15/backward/binders.h
  /usr/include/c++/15/bit
+ /usr/include/c++/15/bits/algorithmfwd.h
  /usr/include/c++/15/bits/alloc_traits.h
  /usr/include/c++/15/bits/allocator.h
  /usr/include/c++/15/bits/atomic_base.h
@@ -152,6 +157,8 @@ CMakeFiles/chess_engine.dir/UCIHandler.cpp.o
  /usr/include/c++/15/bits/predefined_ops.h
  /usr/include/c++/15/bits/ptr_traits.h
  /usr/include/c++/15/bits/range_access.h
+ /usr/include/c++/15/bits/ranges_algo.h
+ /usr/include/c++/15/bits/ranges_algobase.h
  /usr/include/c++/15/bits/ranges_base.h
  /usr/include/c++/15/bits/ranges_cmp.h
  /usr/include/c++/15/bits/ranges_util.h
@@ -162,14 +169,17 @@ CMakeFiles/chess_engine.dir/UCIHandler.cpp.o
  /usr/include/c++/15/bits/std_abs.h
  /usr/include/c++/15/bits/std_mutex.h
  /usr/include/c++/15/bits/std_thread.h
+ /usr/include/c++/15/bits/stl_algo.h
  /usr/include/c++/15/bits/stl_algobase.h
  /usr/include/c++/15/bits/stl_bvector.h
  /usr/include/c++/15/bits/stl_construct.h
  /usr/include/c++/15/bits/stl_function.h
+ /usr/include/c++/15/bits/stl_heap.h
  /usr/include/c++/15/bits/stl_iterator.h
  /usr/include/c++/15/bits/stl_iterator_base_funcs.h
  /usr/include/c++/15/bits/stl_iterator_base_types.h
  /usr/include/c++/15/bits/stl_pair.h
+ /usr/include/c++/15/bits/stl_tempbuf.h
  /usr/include/c++/15/bits/stl_uninitialized.h
  /usr/include/c++/15/bits/stl_vector.h
  /usr/include/c++/15/bits/streambuf.tcc
@@ -177,6 +187,7 @@ CMakeFiles/chess_engine.dir/UCIHandler.cpp.o
  /usr/include/c++/15/bits/string_view.tcc
  /usr/include/c++/15/bits/stringfwd.h
  /usr/include/c++/15/bits/this_thread_sleep.h
+ /usr/include/c++/15/bits/uniform_int_dist.h
  /usr/include/c++/15/bits/unique_ptr.h
  /usr/include/c++/15/bits/unordered_map.h
  /usr/include/c++/15/bits/uses_allocator.h
@@ -215,6 +226,8 @@ CMakeFiles/chess_engine.dir/UCIHandler.cpp.o
  /usr/include/c++/15/new
  /usr/include/c++/15/numbers
  /usr/include/c++/15/ostream
+ /usr/include/c++/15/pstl/execution_defs.h
+ /usr/include/c++/15/pstl/glue_algorithm_defs.h
  /usr/include/c++/15/pstl/pstl_config.h
  /usr/include/c++/15/ratio
  /usr/include/c++/15/semaphore
@@ -428,7 +441,9 @@ CMakeFiles/chess_engine.dir/engine.cpp.o
  /usr/include/bits/stdint-intn.h
  /usr/include/bits/stdint-least.h
  /usr/include/bits/stdint-uintn.h
+ /usr/include/bits/stdio.h
  /usr/include/bits/stdio_lim.h
+ /usr/include/bits/stdlib-bsearch.h
  /usr/include/bits/stdlib-float.h
  /usr/include/bits/struct_mutex.h
  /usr/include/bits/struct_rwlock.h
@@ -633,6 +648,7 @@ CMakeFiles/chess_engine.dir/engine.cpp.o
  /usr/include/c++/15/span
  /usr/include/c++/15/sstream
  /usr/include/c++/15/stdexcept
+ /usr/include/c++/15/stdlib.h
  /usr/include/c++/15/stop_token
  /usr/include/c++/15/streambuf
  /usr/include/c++/15/string
@@ -705,11 +721,17 @@ CMakeFiles/chess_engine.dir/engine.cpp.o
  /usr/include/unistd.h
  /usr/include/wchar.h
  /usr/include/wctype.h
+ /usr/lib64/gcc/x86_64-suse-linux/15/include/emmintrin.h
  /usr/lib64/gcc/x86_64-suse-linux/15/include/limits.h
+ /usr/lib64/gcc/x86_64-suse-linux/15/include/mm_malloc.h
+ /usr/lib64/gcc/x86_64-suse-linux/15/include/mmintrin.h
+ /usr/lib64/gcc/x86_64-suse-linux/15/include/mwaitintrin.h
+ /usr/lib64/gcc/x86_64-suse-linux/15/include/pmmintrin.h
  /usr/lib64/gcc/x86_64-suse-linux/15/include/stdarg.h
  /usr/lib64/gcc/x86_64-suse-linux/15/include/stddef.h
  /usr/lib64/gcc/x86_64-suse-linux/15/include/stdint.h
  /usr/lib64/gcc/x86_64-suse-linux/15/include/syslimits.h
+ /usr/lib64/gcc/x86_64-suse-linux/15/include/xmmintrin.h
 
 CMakeFiles/chess_engine.dir/game.cpp.o
  /home/aimray/Projects/BigBroX/game.cpp
@@ -760,7 +782,9 @@ CMakeFiles/chess_engine.dir/game.cpp.o
  /usr/include/bits/stdint-intn.h
  /usr/include/bits/stdint-least.h
  /usr/include/bits/stdint-uintn.h
+ /usr/include/bits/stdio.h
  /usr/include/bits/stdio_lim.h
+ /usr/include/bits/stdlib-bsearch.h
  /usr/include/bits/stdlib-float.h
  /usr/include/bits/struct_mutex.h
  /usr/include/bits/struct_rwlock.h
@@ -1037,7 +1061,9 @@ CMakeFiles/chess_engine.dir/main.cpp.o
  /usr/include/bits/stdint-intn.h
  /usr/include/bits/stdint-least.h
  /usr/include/bits/stdint-uintn.h
+ /usr/include/bits/stdio.h
  /usr/include/bits/stdio_lim.h
+ /usr/include/bits/stdlib-bsearch.h
  /usr/include/bits/stdlib-float.h
  /usr/include/bits/struct_mutex.h
  /usr/include/bits/struct_rwlock.h
@@ -1298,7 +1324,9 @@ CMakeFiles/chess_engine.dir/position.cpp.o
  /usr/include/bits/stdint-intn.h
  /usr/include/bits/stdint-least.h
  /usr/include/bits/stdint-uintn.h
+ /usr/include/bits/stdio.h
  /usr/include/bits/stdio_lim.h
+ /usr/include/bits/stdlib-bsearch.h
  /usr/include/bits/stdlib-float.h
  /usr/include/bits/struct_mutex.h
  /usr/include/bits/struct_rwlock.h
@@ -1511,7 +1539,9 @@ CMakeFiles/chess_engine.dir/utils.cpp.o
  /usr/include/bits/stdint-intn.h
  /usr/include/bits/stdint-least.h
  /usr/include/bits/stdint-uintn.h
+ /usr/include/bits/stdio.h
  /usr/include/bits/stdio_lim.h
+ /usr/include/bits/stdlib-bsearch.h
  /usr/include/bits/stdlib-float.h
  /usr/include/bits/struct_mutex.h
  /usr/include/bits/struct_rwlock.h

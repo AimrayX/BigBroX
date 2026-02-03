@@ -165,16 +165,20 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
     if(score > bestScore) {
 
       bestScore = score;
+      
+      // Always update PV for the best move found so far
+      pvTable[ply][ply] = moveList.moves[i];
+
+      // Copy the rest of the PV from the child position
+      for(int j = ply + 1; j < pvLength[ply + 1]; j++) {
+        pvTable[ply][j] = pvTable[ply + 1][j];
+      }
+      
+      // PV length includes our move plus the child's PV
+      pvLength[ply] = (pvLength[ply + 1] > ply + 1) ? pvLength[ply + 1] : (ply + 1);
 
       if(score > alpha) {
         alpha = score;
-        pvTable[ply][ply] = moveList.moves[i];
-
-        int nextPly = ply + 1;
-        for(int i = nextPly; i < pvLength[nextPly]; i++) {
-          pvTable[ply][i] = pvTable[nextPly][i];
-        }
-        pvLength[ply] = pvLength[nextPly];
       }
     }
 
@@ -226,9 +230,41 @@ Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
         }
         std::cout << std::endl;
 
-        mLastBestMove = pvTable[0][0];
+        // Only update if we have a valid PV
+        if(pvLength[0] > 0) {
+            mLastBestMove = pvTable[0][0];
+        }
         mCurrentDepth++;
     }
+    
+    // Safety check: ensure we have a valid legal move
+    bool moveIsValid = false;
+    if (mLastBestMove.from != 0 || mLastBestMove.to != 0) {
+        // Check if this move is actually legal
+        MoveList moveList;
+        pos.getMoves(pos.mSideToMove, moveList);
+        for (int i = 0; i < moveList.count; i++) {
+            if (moveList.moves[i].from == mLastBestMove.from && 
+                moveList.moves[i].to == mLastBestMove.to &&
+                moveList.moves[i].promotion == mLastBestMove.promotion) {
+                moveIsValid = true;
+                break;
+            }
+        }
+    }
+    
+    if (!moveIsValid) {
+        // No valid move found, generate any legal move
+        MoveList moveList;
+        pos.getMoves(pos.mSideToMove, moveList);
+        if (moveList.count > 0) {
+            mLastBestMove = moveList.moves[0];
+        } else {
+            // No legal moves at all (checkmate or stalemate)
+            std::cout << "No legal moves available!" << std::endl;
+        }
+    }
+    
     //std::cout << "search end" << std::endl;
     std::cout << "bestmove " << util::moveToString(mLastBestMove) << std::endl;
 
@@ -277,6 +313,14 @@ Engine::Engine() {
   mCurrentEval = 0;
   mDepth = 15;
   mTimeSpentMs = 0;
+  
+  // Initialize PV table
+  for(int i = 0; i < MAX_PLY; i++) {
+    pvLength[i] = 0;
+    for(int j = 0; j < MAX_PLY; j++) {
+      pvTable[i][j] = Move();
+    }
+  }
 }
 
 Engine::~Engine() {

@@ -127,7 +127,7 @@ uint64_t Position::getPseudoLegalMoves(int square, int type, Color color) {
 // Check if 'square' is attacked by pieces of 'sideAttacking'
 bool Position::isSquareAttacked(int square, Color sideAttacking) {
     Color defendingSide = (sideAttacking == WHITE) ? BLACK : WHITE;
-    if (attack::getPawnAttacks(square, defendingSide, occupancies[2]) & pieces[sideAttacking][PAWN]) {
+    if (attack::pawnAttacks[defendingSide][square] & pieces[sideAttacking][PAWN]) {
         return true;
     }
 
@@ -201,8 +201,9 @@ void Position::doMove(Move m) {
 
             pieces[mSideToMove][ROOK] &= ~rookFrom;
             pieces[mSideToMove][ROOK] |= rookTo;
-            board[m.from] = NOPIECE;
-            board[m.to] = ROOK;
+
+            board[m.to + 1] = NOPIECE;
+            board[m.to - 1] = ROOK;
         } 
         else if ((int)m.to - (int)m.from == -2) {
             uint64_t rookFrom = (1ULL << (m.to - 2));
@@ -210,8 +211,9 @@ void Position::doMove(Move m) {
 
             pieces[mSideToMove][ROOK] &= ~rookFrom;
             pieces[mSideToMove][ROOK] |= rookTo;
-            board[m.from] = NOPIECE;
-            board[m.to] = ROOK;
+
+            board[m.to - 2] = NOPIECE;
+            board[m.to + 1] = ROOK;
         }
     } 
     else if (startBit & pieces[mSideToMove][KNIGHT]) {
@@ -234,47 +236,28 @@ void Position::doMove(Move m) {
         }
 
         if(endBit == mEnPassentSquare) {
-          state.capturedPiece = PAWN;
-
-          int capturedOffset = (mSideToMove == WHITE) ? -8 : 8;
-          uint64_t enemyPawnLoc = (1ULL << (m.to + capturedOffset));
-
-          pieces[(mSideToMove == WHITE ? BLACK : WHITE)][PAWN] &= ~enemyPawnLoc;
-          board[m.to + capturedOffset] = NOPIECE;
-        }
-
-        if (abs(m.to - m.from) == 16) {
-          int skippedSquare = (m.from + m.to) / 2;
-          mEnPassentSquare = (1ULL << skippedSquare); 
-        } else {
-          mEnPassentSquare = 0;
+          Color enemyColor = (mSideToMove == WHITE) ? BLACK : WHITE;
+          int captureOffset = (mSideToMove == WHITE) ? -8 : 8;
+          pieces[enemyColor][PAWN] &= ~(1ULL << (m.to + captureOffset));
+          board[m.to + captureOffset] = NOPIECE;
         }
 
         state.movedPiece = PAWN;
-        state.promotionSquare = m.to;
+
+        if(abs((int)m.to - (int)m.from) == 16) {
+          int eP = (mSideToMove == WHITE) ? (m.from + 8) : (m.from - 8);
+          mEnPassentSquare = (1ULL << eP);
+        } else {
+          mEnPassentSquare = 0;
+        }
     }
 
-    mSideToMove = ((mSideToMove == WHITE) ? BLACK : WHITE);
-
-    if(state.capturedPiece == NOPIECE) {
-      if (endBit & pieces[mSideToMove][ROOK]) {
-        pieces[mSideToMove][ROOK] &= ~endBit;
-        state.capturedPiece = ROOK;
-      } else if (endBit & pieces[mSideToMove][BISHOP]) {
-        pieces[mSideToMove][BISHOP] &= ~endBit;
-        state.capturedPiece = BISHOP;
-      } else if (endBit & pieces[mSideToMove][QUEEN]) {
-        pieces[mSideToMove][QUEEN] &= ~endBit;
-        state.capturedPiece = QUEEN;
-      } else if (endBit & pieces[mSideToMove][KING]) {
-        pieces[mSideToMove][KING] &= ~endBit;
-        state.capturedPiece = KING;
-      } else if (endBit & pieces[mSideToMove][KNIGHT]) {
-        pieces[mSideToMove][KNIGHT] &= ~endBit;
-        state.capturedPiece = KNIGHT;
-      } else if (endBit & pieces[mSideToMove][PAWN]) {
-        pieces[mSideToMove][PAWN] &= ~endBit;
-        state.capturedPiece = PAWN;
+    Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
+    for(int i = 0; i < 6; i++) {
+      if(endBit & pieces[enemy][i]) {
+        pieces[enemy][i] &= ~endBit;
+        state.capturedPiece = i;
+        break;
       }
     }
     occupancies[WHITE] = pieces[WHITE][PAWN] | pieces[WHITE][KNIGHT] | pieces[WHITE][BISHOP] | pieces[WHITE][QUEEN] | pieces[WHITE][KING] | pieces[WHITE][ROOK];
@@ -282,9 +265,9 @@ void Position::doMove(Move m) {
     occupancies[2] = occupancies[WHITE] | occupancies[BLACK];
 
     // --- UPDATE CASTLING RIGHTS ---
-    // 1. If King moves, lose both rights
+    // FIXED: The logic was inverted - when WHITE king moves, remove WHITE's rights
     if (state.movedPiece == KING) {
-        if (mSideToMove == BLACK) mCastleRight &= ~(WHITE_OO | WHITE_OOO); 
+        if (mSideToMove == WHITE) mCastleRight &= ~(WHITE_OO | WHITE_OOO); 
         else                      mCastleRight &= ~(BLACK_OO | BLACK_OOO);
     }
 
@@ -303,6 +286,9 @@ void Position::doMove(Move m) {
         else if (m.to == 56) mCastleRight &= ~BLACK_OOO;
         else if (m.to == 63) mCastleRight &= ~BLACK_OO;
     }
+
+    // Switch sides
+    mSideToMove = (mSideToMove == WHITE) ? BLACK : WHITE;
 
     history.push_back(state);
 }

@@ -117,7 +117,7 @@ void attack::initRays() {
     }
 
     for(int i = 1; i < 8; i++) {
-      if(r - i < 0) break;
+      if(f - i < 0) break;
 
       int target = r * 8 + (f - i);
       Rays[3][sq] |= (1ULL << target);
@@ -155,13 +155,13 @@ void attack::initRays() {
 
 void attack::initPawnAttacks() {
   for(int sq = 0; sq < 64; sq++) {
-    if (sq % 8 != 0) pawnAttacks[WHITE][sq] |= (1ULL << (sq + 7));
-    if (sq % 8 != 7) pawnAttacks[WHITE][sq] |= (1ULL << (sq + 9));
+    if (sq % 8 != 0 && (sq + 7) < 64) pawnAttacks[WHITE][sq] |= (1ULL << (sq + 7));
+    if (sq % 8 != 7 && (sq + 9) < 64) pawnAttacks[WHITE][sq] |= (1ULL << (sq + 9));
   }
 
   for (int sq = 0; sq < 64; sq++) {
-    if (sq % 8 != 7) pawnAttacks[BLACK][sq] |= (1ULL << (sq - 7));
-    if (sq % 8 != 0) pawnAttacks[BLACK][sq] |= (1ULL << (sq - 9));
+    if (sq % 8 != 7 && (sq - 7) >= 0) pawnAttacks[BLACK][sq] |= (1ULL << (sq - 7));
+    if (sq % 8 != 0 && (sq - 9) >= 0) pawnAttacks[BLACK][sq] |= (1ULL << (sq - 9));
   }
 }
 
