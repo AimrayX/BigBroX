@@ -9,6 +9,48 @@
 
 const int INF = 1000000;
 
+// Add this to engine.cpp
+
+std::vector<Move> Engine::getPV(Position& pos, int depth) {
+    std::vector<Move> pv;
+    
+    // Create a copy of the hash/state to check for loops (optional but safe)
+    // For simplicity, we just use a counter limit
+    int ply = 0;
+    
+    // We will make moves on the board to follow the path, 
+    // then undo them all at the end to restore the board state.
+    while (ply < depth) {
+        Move m = tt.probeMove(pos.getHash());
+        
+        if (m.from == 0 && m.to == 0) break; // No move in TT
+        
+        // Verify legality! (Important for hash collisions)
+        MoveList moves;
+        pos.getMoves(pos.mSideToMove, moves);
+        bool legal = false;
+        for (int i = 0; i < moves.count; i++) {
+            if (moves.moves[i].from == m.from && moves.moves[i].to == m.to) {
+                legal = true;
+                break;
+            }
+        }
+        
+        if (!legal) break;
+        
+        pv.push_back(m);
+        pos.doMove(m);
+        ply++;
+    }
+    
+    // IMPORTANT: Restore the board position!
+    for (int i = pv.size() - 1; i >= 0; i--) {
+        pos.undoMove(pv[i]);
+    }
+    
+    return pv;
+}
+
 void Engine::pickMove(MoveList& list, int moveNum) {
     int bestIndex = -1;
     int bestScore = -1000000;
@@ -307,18 +349,19 @@ Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
           break;
         }
 
+        std::vector<Move> pvLine = getPV(pos, depth);
 
         // Print PV
         std::cout << "info depth " << depth << " score cp " << score << " pv";
-        for (int i = 0; i < pvLength[0]; i++) {
-          Move m = pvTable[0][i];
+
+        for (const Move& m : pvLine) {
           std::cout << " " << util::moveToString(m);
         }
         std::cout << std::endl;
 
         // Only update if we have a valid PV
-        if(pvLength[0] > 0) {
-            mLastBestMove = pvTable[0][0];
+        if(!pvLine.empty()) {
+            mLastBestMove = pvLine[0];
         }
         mCurrentDepth++;
     }
@@ -358,18 +401,8 @@ Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
 }
 
 int Engine::evaluate(Position& pos) {
-    static const int pieceValues[] = {
-        100,   // PAWN
-        300,   // KNIGHT
-        320,   // BISHOP
-        500,   // ROOK
-        900,   // QUEEN
-        20000  // KING
-    };
-
     int score = 0;
 
-    // 2. Sum up material and positional advantage for both sides
     for (int p = 0; p < 6; p++) {
         uint64_t bitboard = pos.pieces[WHITE][p]; 
 
@@ -398,9 +431,31 @@ int Engine::evaluate(Position& pos) {
         }
     }
 
-    // 3. Return score from the perspective of the side to move
-    // If it's White's turn, a positive score is good.
-    // If it's Black's turn, we must negate the score because Negamax always maximizes "my" score.
+    const int DOUBLED_PENALTY = 20;
+    uint64_t fileMask = 0x0101010101010101ULL;
+
+    for (int file = 0; file < 8; file++) {
+        // Count White pawns on this file
+        uint64_t whitePawnsOnFile = pos.pieces[WHITE][PAWN] & fileMask;
+        int whiteCount = __builtin_popcountll(whitePawnsOnFile);
+
+        // Count Black pawns on this file
+        uint64_t blackPawnsOnFile = pos.pieces[BLACK][PAWN] & fileMask;
+        int blackCount = __builtin_popcountll(blackPawnsOnFile);
+
+        // Apply Penalty if more than 1 pawn exists on the file
+        if (whiteCount > 1) {
+            score -= (whiteCount - 1) * DOUBLED_PENALTY;
+        }
+
+        if (blackCount > 1) {
+            score += (blackCount - 1) * DOUBLED_PENALTY;
+        }
+
+        // Move mask to the next file
+        fileMask <<= 1;
+    }
+
     return (pos.mSideToMove == WHITE) ? score : -score;
 }
 

@@ -19,6 +19,17 @@ private:
     long long nodes;
     Move killerMoves[64][2];
     int historyMoves[2][64][64];
+    std::vector<Move> getPV(Position& pos, int depth);
+
+    static constexpr int pieceValues[6] = {
+        100,   // PAWN
+        300,   // KNIGHT
+        320,   // BISHOP
+        500,   // ROOK
+        900,   // QUEEN
+        20000  // KING
+    };
+
     static constexpr int PST[6][64] = {
     {
       0,0,0,0,0,0,0,0,
