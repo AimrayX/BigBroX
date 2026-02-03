@@ -42,6 +42,7 @@ public:
     void doMove(Move m);
     void undoMove(Move m);
     void getMoves(Color color, MoveList& moveList);
+    void getCaptures(Color color, MoveList& moveList);
     bool isSquareAttacked(int square, Color sideAttacking);
 
     void printBoard();

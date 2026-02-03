@@ -5,7 +5,6 @@
 
 #include <chrono>
 #include <iostream>
-#include <random>
 
 const int INF = 1000000;
 
@@ -143,7 +142,7 @@ int Engine::quiescence(Position& pos, int alpha, int beta, std::stop_token& stok
     }
 
     MoveList moveList;
-    pos.getMoves(pos.mSideToMove, moveList);
+    pos.getCaptures(pos.mSideToMove, moveList);
 
     // 1. Score the moves
     for (int i = 0; i < moveList.count; i++) {
@@ -431,7 +430,7 @@ int Engine::evaluate(Position& pos) {
           bitboard &= (bitboard - 1);
         }
     }
-
+/*
     const int DOUBLED_PENALTY = 20;
     uint64_t fileMask = 0x0101010101010101ULL;
 
@@ -456,7 +455,7 @@ int Engine::evaluate(Position& pos) {
         // Move mask to the next file
         fileMask <<= 1;
     }
-
+*/
     return (pos.mSideToMove == WHITE) ? score : -score;
 }
 

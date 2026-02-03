@@ -190,6 +190,85 @@ uint64_t Position::getPseudoLegalMoves(int square, int type, Color color) {
   return (attackGeneration(square, type, color) & ~occupancies[color]);
 }
 
+void Position::getCaptures(Color color, MoveList& moveList) {
+    Color enemy = (color == WHITE) ? BLACK : WHITE;
+    uint64_t enemyKing = pieces[enemy][KING];
+
+    // Identify the "danger zones" (enemy pieces + en passant square)
+    // We will use this to verify if a move is a capture.
+    uint64_t captureMask = occupancies[enemy];
+    if (mEnPassentSquare != 0) {
+        captureMask |= mEnPassentSquare;
+    }
+
+    for (int i = 0; i < 6; i++) {
+        uint64_t piece = pieces[color][i];
+        while (piece) {
+            int sourceSquare = __builtin_ctzll(piece);
+            
+            // Get all moves for this piece
+            uint64_t validTargets = getPseudoLegalMoves(sourceSquare, i, color);
+            
+            // CRITICAL OPTIMIZATION: 
+            // Only keep moves that land on enemy pieces (Captures) 
+            // or the En Passant square.
+            // Note: We don't filter Promotions here yet because a "Quiet Promotion" 
+            // (Pushing pawn to Q on empty square) is technically not a capture 
+            // but extremely dangerous, so we usually want to keep it.
+            
+            // 1. Separate Captures (using bitwise AND)
+            uint64_t captureMoves = validTargets & captureMask;
+
+            // 2. If it is a pawn, we also want to keep Promotions (even if not capturing)
+            //    A pawn reaches rank 8 (row 0 or 7).
+            if (i == PAWN) {
+                uint64_t rank7Mask = (color == WHITE) ? 0xFF00000000000000ULL : 0x00000000000000FFULL;
+                // If the move lands on rank 8, keep it even if it's not a capture
+                uint64_t promotionMoves = validTargets & rank7Mask;
+                captureMoves |= promotionMoves; 
+            }
+
+            // Ensure we don't capture the King (illegal)
+            captureMoves &= ~enemyKing;
+
+            while (captureMoves) {
+                int targetSquare = __builtin_ctzll(captureMoves);
+                int victim = board[targetSquare];
+                int score = 0;
+
+                // Score logic (MVV-LVA)
+                // Note: En Passant victim is NOPIECE on the board array, need to handle score manually
+                if (victim != NOPIECE) {
+                    static const int victimScores[] = { 100, 300, 310, 500, 900, 0 };
+                    static const int aggressorScores[] = { 100, 300, 310, 500, 900, 0 }; // Approx values
+                    score = victimScores[victim] - aggressorScores[i] + 10000;
+                } 
+                else if (i == PAWN && (1ULL << targetSquare) == mEnPassentSquare) {
+                    // En Passant Capture Score
+                    score = 100 + 10000; 
+                }
+                // Promotion Score (Queen prom is huge)
+                if (i == PAWN && (targetSquare / 8 == 0 || targetSquare / 8 == 7)) {
+                    score += 9000; 
+                }
+
+                // Add to list
+                if (i == PAWN && (targetSquare / 8 == ((color == WHITE) ? 7 : 0))) {
+                    moveList.add(Move(sourceSquare, targetSquare, QUEEN), score);
+                    moveList.add(Move(sourceSquare, targetSquare, KNIGHT), score);
+                    moveList.add(Move(sourceSquare, targetSquare, BISHOP), score);
+                    moveList.add(Move(sourceSquare, targetSquare, ROOK), score);
+                } else {
+                    moveList.add(Move(sourceSquare, targetSquare, NOPIECE), score);
+                }
+
+                captureMoves &= (captureMoves - 1);
+            }
+            piece &= (piece - 1);
+        }
+    }
+}
+
 bool Position::isSquareAttacked(int square, Color sideAttacking) {
     Color defendingSide = (sideAttacking == WHITE) ? BLACK : WHITE;
     if (attack::pawnAttacks[defendingSide][square] & pieces[sideAttacking][PAWN]) {
