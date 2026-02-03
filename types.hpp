@@ -26,19 +26,19 @@ struct Move {
     uint8_t to;
     uint8_t promotion;
     uint8_t padding;
+    int score;
 
-  Move() : from(0), to(0), promotion(NOPIECE), padding(0) {}
-  Move(uint8_t dFrom, uint8_t dTo, uint8_t dPromotion) : from(dFrom), to(dTo), promotion(dPromotion), padding(0) {}
+  Move() : from(0), to(0), promotion(NOPIECE), padding(0), score(0) {}
+  Move(uint8_t dFrom, uint8_t dTo, uint8_t dPromotion) : from(dFrom), to(dTo), promotion(dPromotion), padding(0), score(0) {}
 };
 
 struct MoveList {
   Move moves[256];
-  int scores[256];
   int count = 0;
 
   inline void add(const Move& m, int score) {
     moves[count] = m;
-    scores[count] = score;
+    moves[count].score = score;
     count++;
   }
 

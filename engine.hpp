@@ -100,7 +100,7 @@ private:
     };
 
 static constexpr int mvv_lva[6][6] = {
-    // Attacker: P, N, B, R, Q, K
+//Attacker: P, N, B, R, Q, K
     {105, 205, 305, 405, 505, 605}, // Victim: Pawn
     {104, 204, 304, 404, 504, 604}, // Victim: Knight
     {103, 203, 303, 403, 503, 603}, // Victim: Bishop
@@ -123,6 +123,7 @@ public:
     void setDepth(int depth);
     int getDepth();
 
+    int scoreMove(const Move& m, Position& pos);
     uint64_t mAlgebraicToBit(std::string alge);
     Move search(Position& pos, int timeLimitMs, std::stop_token stoken);
     int evaluate(Position& pos);

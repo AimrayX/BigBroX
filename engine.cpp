@@ -34,12 +34,12 @@ uint64_t ZobristHashing::getHash() const {
 
 void Engine::pickMove(MoveList& list, int moveNum) {
     int bestIndex = -1;
-    int bestScore = -1000000; // Start with a very low score
+    int bestScore = -1000000;
 
     // 1. Find the move with the highest score
     for (int i = moveNum; i < list.count; ++i) {
-        if (list.scores[i] > bestScore) {
-            bestScore = list.scores[i];
+        if (list.moves[i].score > bestScore) {
+            bestScore = list.moves[i].score;
             bestIndex = i;
         }
     }
@@ -50,12 +50,39 @@ void Engine::pickMove(MoveList& list, int moveNum) {
         Move tempMove = list.moves[moveNum];
         list.moves[moveNum] = list.moves[bestIndex];
         list.moves[bestIndex] = tempMove;
-
-        // Swap scores (to keep the parallel arrays synced)
-        int tempScore = list.scores[moveNum];
-        list.scores[moveNum] = list.scores[bestIndex];
-        list.scores[bestIndex] = tempScore;
     }
+}
+
+// engine.cpp
+
+int Engine::scoreMove(const Move& m, Position& pos) {
+    int score = 0;
+    
+    // Look up what pieces are involved using the board array
+    int attacker = pos.board[m.from];
+    int victim = pos.board[m.to];
+
+    // 1. MVV-LVA for Standard Captures
+    if (victim != NOPIECE) {
+        // Add 10000 to ensure captures are searched before quiet moves
+        score = 10000 + mvv_lva[victim][attacker];
+    }
+    // 2. Handle En Passant (Special case: victim is not on target square)
+    // We check if the target square bit matches the En Passant bitboard
+    else if (attacker == PAWN && (1ULL << m.to) == pos.mEnPassentSquare) {
+        score = 10000 + mvv_lva[PAWN][PAWN];
+    }
+
+    // 3. Score Promotions
+    // Promoting to a Queen is huge; almost as good as capturing a Rook
+    if (m.promotion != NOPIECE) {
+        if (m.promotion == QUEEN) score += 9000;
+        else if (m.promotion == KNIGHT) score += 4000;
+        else score += 1000;
+    }
+
+    // 4. Quiet Moves (History Heuristic would go here later)
+    return score;
 }
 
 int Engine::quiescence(Position& pos, int alpha, int beta, std::stop_token& stoken) {
@@ -138,6 +165,11 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
 
   MoveList moveList;
   pos.getMoves(pos.mSideToMove, moveList);
+
+  for(int i = 0; i < moveList.count; i++) {
+    moveList.moves[i].score = scoreMove(moveList.moves[i], pos);
+  }
+
   int bestScore = -INF;
   int movesSearched = 0;
 
