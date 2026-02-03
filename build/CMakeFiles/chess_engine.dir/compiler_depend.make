@@ -339,31 +339,20 @@ CMakeFiles/chess_engine.dir/attack.cpp.o: /home/aimray/Projects/BigBroX/attack.c
   /usr/include/bits/wchar.h \
   /usr/include/bits/wordsize.h \
   /usr/include/c++/15/array \
-  /usr/include/c++/15/backward/binders.h \
   /usr/include/c++/15/bit \
-  /usr/include/c++/15/bits/alloc_traits.h \
-  /usr/include/c++/15/bits/allocator.h \
   /usr/include/c++/15/bits/char_traits.h \
   /usr/include/c++/15/bits/concept_check.h \
   /usr/include/c++/15/bits/cpp_type_traits.h \
   /usr/include/c++/15/bits/cxxabi_forced.h \
-  /usr/include/c++/15/bits/enable_special_members.h \
-  /usr/include/c++/15/bits/erase_if.h \
   /usr/include/c++/15/bits/exception.h \
   /usr/include/c++/15/bits/exception_defines.h \
   /usr/include/c++/15/bits/functexcept.h \
   /usr/include/c++/15/bits/functional_hash.h \
   /usr/include/c++/15/bits/hash_bytes.h \
-  /usr/include/c++/15/bits/hashtable.h \
-  /usr/include/c++/15/bits/hashtable_policy.h \
-  /usr/include/c++/15/bits/invoke.h \
   /usr/include/c++/15/bits/iterator_concepts.h \
   /usr/include/c++/15/bits/max_size_type.h \
-  /usr/include/c++/15/bits/memory_resource.h \
   /usr/include/c++/15/bits/memoryfwd.h \
   /usr/include/c++/15/bits/move.h \
-  /usr/include/c++/15/bits/new_allocator.h \
-  /usr/include/c++/15/bits/node_handle.h \
   /usr/include/c++/15/bits/ostream_insert.h \
   /usr/include/c++/15/bits/postypes.h \
   /usr/include/c++/15/bits/predefined_ops.h \
@@ -371,31 +360,23 @@ CMakeFiles/chess_engine.dir/attack.cpp.o: /home/aimray/Projects/BigBroX/attack.c
   /usr/include/c++/15/bits/range_access.h \
   /usr/include/c++/15/bits/ranges_base.h \
   /usr/include/c++/15/bits/ranges_cmp.h \
-  /usr/include/c++/15/bits/ranges_util.h \
   /usr/include/c++/15/bits/requires_hosted.h \
   /usr/include/c++/15/bits/stl_algobase.h \
   /usr/include/c++/15/bits/stl_construct.h \
-  /usr/include/c++/15/bits/stl_function.h \
   /usr/include/c++/15/bits/stl_iterator.h \
   /usr/include/c++/15/bits/stl_iterator_base_funcs.h \
   /usr/include/c++/15/bits/stl_iterator_base_types.h \
   /usr/include/c++/15/bits/stl_pair.h \
   /usr/include/c++/15/bits/string_view.tcc \
   /usr/include/c++/15/bits/stringfwd.h \
-  /usr/include/c++/15/bits/unordered_map.h \
-  /usr/include/c++/15/bits/uses_allocator.h \
-  /usr/include/c++/15/bits/uses_allocator_args.h \
   /usr/include/c++/15/bits/utility.h \
   /usr/include/c++/15/bits/version.h \
   /usr/include/c++/15/compare \
   /usr/include/c++/15/concepts \
-  /usr/include/c++/15/cstddef \
   /usr/include/c++/15/cstdint \
   /usr/include/c++/15/cwchar \
   /usr/include/c++/15/debug/assertions.h \
   /usr/include/c++/15/debug/debug.h \
-  /usr/include/c++/15/ext/aligned_buffer.h \
-  /usr/include/c++/15/ext/alloc_traits.h \
   /usr/include/c++/15/ext/numeric_traits.h \
   /usr/include/c++/15/ext/type_traits.h \
   /usr/include/c++/15/initializer_list \
@@ -404,10 +385,7 @@ CMakeFiles/chess_engine.dir/attack.cpp.o: /home/aimray/Projects/BigBroX/attack.c
   /usr/include/c++/15/numbers \
   /usr/include/c++/15/pstl/pstl_config.h \
   /usr/include/c++/15/string_view \
-  /usr/include/c++/15/tuple \
   /usr/include/c++/15/type_traits \
-  /usr/include/c++/15/unordered_map \
-  /usr/include/c++/15/x86_64-suse-linux/bits/c++allocator.h \
   /usr/include/c++/15/x86_64-suse-linux/bits/c++config.h \
   /usr/include/c++/15/x86_64-suse-linux/bits/cpu_defines.h \
   /usr/include/c++/15/x86_64-suse-linux/bits/os_defines.h \
@@ -1445,16 +1423,12 @@ CMakeFiles/chess_engine.dir/position.cpp.o: /home/aimray/Projects/BigBroX/positi
   /usr/include/c++/15/bits/cpp_type_traits.h \
   /usr/include/c++/15/bits/cxxabi_forced.h \
   /usr/include/c++/15/bits/cxxabi_init_exception.h \
-  /usr/include/c++/15/bits/enable_special_members.h \
-  /usr/include/c++/15/bits/erase_if.h \
   /usr/include/c++/15/bits/exception.h \
   /usr/include/c++/15/bits/exception_defines.h \
   /usr/include/c++/15/bits/exception_ptr.h \
   /usr/include/c++/15/bits/functexcept.h \
   /usr/include/c++/15/bits/functional_hash.h \
   /usr/include/c++/15/bits/hash_bytes.h \
-  /usr/include/c++/15/bits/hashtable.h \
-  /usr/include/c++/15/bits/hashtable_policy.h \
   /usr/include/c++/15/bits/invoke.h \
   /usr/include/c++/15/bits/ios_base.h \
   /usr/include/c++/15/bits/istream.tcc \
@@ -1470,7 +1444,6 @@ CMakeFiles/chess_engine.dir/position.cpp.o: /home/aimray/Projects/BigBroX/positi
   /usr/include/c++/15/bits/move.h \
   /usr/include/c++/15/bits/nested_exception.h \
   /usr/include/c++/15/bits/new_allocator.h \
-  /usr/include/c++/15/bits/node_handle.h \
   /usr/include/c++/15/bits/ostream.h \
   /usr/include/c++/15/bits/ostream.tcc \
   /usr/include/c++/15/bits/ostream_insert.h \
@@ -1499,7 +1472,6 @@ CMakeFiles/chess_engine.dir/position.cpp.o: /home/aimray/Projects/BigBroX/positi
   /usr/include/c++/15/bits/streambuf_iterator.h \
   /usr/include/c++/15/bits/string_view.tcc \
   /usr/include/c++/15/bits/stringfwd.h \
-  /usr/include/c++/15/bits/unordered_map.h \
   /usr/include/c++/15/bits/uses_allocator.h \
   /usr/include/c++/15/bits/uses_allocator_args.h \
   /usr/include/c++/15/bits/utility.h \
@@ -1519,7 +1491,6 @@ CMakeFiles/chess_engine.dir/position.cpp.o: /home/aimray/Projects/BigBroX/positi
   /usr/include/c++/15/debug/assertions.h \
   /usr/include/c++/15/debug/debug.h \
   /usr/include/c++/15/exception \
-  /usr/include/c++/15/ext/aligned_buffer.h \
   /usr/include/c++/15/ext/alloc_traits.h \
   /usr/include/c++/15/ext/atomicity.h \
   /usr/include/c++/15/ext/numeric_traits.h \
@@ -1543,7 +1514,6 @@ CMakeFiles/chess_engine.dir/position.cpp.o: /home/aimray/Projects/BigBroX/positi
   /usr/include/c++/15/tuple \
   /usr/include/c++/15/type_traits \
   /usr/include/c++/15/typeinfo \
-  /usr/include/c++/15/unordered_map \
   /usr/include/c++/15/vector \
   /usr/include/c++/15/x86_64-suse-linux/bits/atomic_word.h \
   /usr/include/c++/15/x86_64-suse-linux/bits/c++allocator.h \
@@ -1655,15 +1625,11 @@ CMakeFiles/chess_engine.dir/utils.cpp.o: /home/aimray/Projects/BigBroX/utils.cpp
   /usr/include/c++/15/bits/concept_check.h \
   /usr/include/c++/15/bits/cpp_type_traits.h \
   /usr/include/c++/15/bits/cxxabi_forced.h \
-  /usr/include/c++/15/bits/enable_special_members.h \
-  /usr/include/c++/15/bits/erase_if.h \
   /usr/include/c++/15/bits/exception.h \
   /usr/include/c++/15/bits/exception_defines.h \
   /usr/include/c++/15/bits/functexcept.h \
   /usr/include/c++/15/bits/functional_hash.h \
   /usr/include/c++/15/bits/hash_bytes.h \
-  /usr/include/c++/15/bits/hashtable.h \
-  /usr/include/c++/15/bits/hashtable_policy.h \
   /usr/include/c++/15/bits/invoke.h \
   /usr/include/c++/15/bits/iterator_concepts.h \
   /usr/include/c++/15/bits/localefwd.h \
@@ -1672,7 +1638,6 @@ CMakeFiles/chess_engine.dir/utils.cpp.o: /home/aimray/Projects/BigBroX/utils.cpp
   /usr/include/c++/15/bits/memoryfwd.h \
   /usr/include/c++/15/bits/move.h \
   /usr/include/c++/15/bits/new_allocator.h \
-  /usr/include/c++/15/bits/node_handle.h \
   /usr/include/c++/15/bits/ostream_insert.h \
   /usr/include/c++/15/bits/postypes.h \
   /usr/include/c++/15/bits/predefined_ops.h \
@@ -1693,7 +1658,6 @@ CMakeFiles/chess_engine.dir/utils.cpp.o: /home/aimray/Projects/BigBroX/utils.cpp
   /usr/include/c++/15/bits/stl_pair.h \
   /usr/include/c++/15/bits/string_view.tcc \
   /usr/include/c++/15/bits/stringfwd.h \
-  /usr/include/c++/15/bits/unordered_map.h \
   /usr/include/c++/15/bits/uses_allocator.h \
   /usr/include/c++/15/bits/uses_allocator_args.h \
   /usr/include/c++/15/bits/utility.h \
@@ -1710,7 +1674,6 @@ CMakeFiles/chess_engine.dir/utils.cpp.o: /home/aimray/Projects/BigBroX/utils.cpp
   /usr/include/c++/15/cwchar \
   /usr/include/c++/15/debug/assertions.h \
   /usr/include/c++/15/debug/debug.h \
-  /usr/include/c++/15/ext/aligned_buffer.h \
   /usr/include/c++/15/ext/alloc_traits.h \
   /usr/include/c++/15/ext/numeric_traits.h \
   /usr/include/c++/15/ext/string_conversions.h \
@@ -1724,7 +1687,6 @@ CMakeFiles/chess_engine.dir/utils.cpp.o: /home/aimray/Projects/BigBroX/utils.cpp
   /usr/include/c++/15/string_view \
   /usr/include/c++/15/tuple \
   /usr/include/c++/15/type_traits \
-  /usr/include/c++/15/unordered_map \
   /usr/include/c++/15/x86_64-suse-linux/bits/c++allocator.h \
   /usr/include/c++/15/x86_64-suse-linux/bits/c++config.h \
   /usr/include/c++/15/x86_64-suse-linux/bits/c++locale.h \

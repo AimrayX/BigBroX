@@ -12,6 +12,7 @@
 #include <stop_token>
 #include <atomic>
 
+
 class ZobristHashing {
 private:
     std::unordered_map<int, std::vector<uint64_t>> pieceHashes;
@@ -55,6 +56,7 @@ public:
     int evaluate(Position& pos);
     int quiescence(Position& pos, int alpha, int beta);
     int negaMax(Position& pos, int depth, int alpha, int beta, std::stop_token& stoken);
+    void pickMove(MoveList& list, int moveNum);
 
     ZobristHashing zobristHashing;
 

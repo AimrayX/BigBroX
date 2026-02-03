@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <string_view>
 #include <array>
-#include <unordered_map>
 
 enum Piece {
     PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NOPIECE
@@ -30,6 +29,22 @@ struct Move {
 
   Move() : from(0), to(0), promotion(NOPIECE), padding(0) {}
   Move(uint8_t dFrom, uint8_t dTo, uint8_t dPromotion) : from(dFrom), to(dTo), promotion(dPromotion), padding(0) {}
+};
+
+struct MoveList {
+  Move moves[256];
+  int scores[256];
+  int count = 0;
+
+  inline void add(const Move& m, int score) {
+    moves[count] = m;
+    scores[count] = score;
+    count++;
+  }
+
+  inline void clear() {
+    count = 0;
+  }
 };
 
 struct StateInfo {

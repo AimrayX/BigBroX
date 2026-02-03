@@ -15,6 +15,11 @@ int Position::setStartingPosition(std::string startingPosition) {
             pieces[c][p] = 0ULL;
         }
     }
+
+    for(int k = 0; k < 64; k++) {
+      board[k] = 0;
+    }
+
     occupancies[0] = 0ULL; 
     occupancies[1] = 0ULL; 
     occupancies[2] = 0ULL;
@@ -53,6 +58,7 @@ int Position::setStartingPosition(std::string startingPosition) {
             if (type != NOPIECE) {
                 pieces[color][type] |= (1ULL << square);
                 occupancies[color] |= (1ULL << square);
+                board[square] = type;
             }
             file++;
         }
@@ -119,7 +125,6 @@ uint64_t Position::attackGeneration(int square, int type, Color color) {
           extendedOccupancy |= mEnPassentSquare;
         }
         attack = attack::getPawnAttacks(square, color, extendedOccupancy);
-        mAttacksP = attack;
     }
     return attack;
 }
@@ -171,24 +176,32 @@ void Position::doMove(Move m) {
     if (startBit & pieces[mSideToMove][ROOK]) {
         pieces[mSideToMove][ROOK] &= ~startBit;
         pieces[mSideToMove][ROOK] |= endBit; 
+        board[m.from] = 0;
+        board[m.to] = ROOK;
         state.movedPiece = ROOK;
         mEnPassentSquare = 0;
     } 
     else if (startBit & pieces[mSideToMove][BISHOP]) {
         pieces[mSideToMove][BISHOP] &= ~startBit;
         pieces[mSideToMove][BISHOP] |= endBit;
+        board[m.from] = 0;
+        board[m.to] = BISHOP;
         state.movedPiece = BISHOP;
         mEnPassentSquare = 0;
     } 
     else if (startBit & pieces[mSideToMove][QUEEN]) {
         pieces[mSideToMove][QUEEN] &= ~startBit;
         pieces[mSideToMove][QUEEN] |= endBit;
+        board[m.from] = 0;
+        board[m.to] = QUEEN;
         state.movedPiece = QUEEN;
         mEnPassentSquare = 0;
     } 
     else if (startBit & pieces[mSideToMove][KING]) {
         pieces[mSideToMove][KING] &= ~startBit;
         pieces[mSideToMove][KING] |= endBit;
+        board[m.from] = 0;
+        board[m.to] = KING;
         state.movedPiece = KING;
 
         if ((int)m.to - (int)m.from == 2) { 
@@ -197,6 +210,8 @@ void Position::doMove(Move m) {
 
             pieces[mSideToMove][ROOK] &= ~rookFrom;
             pieces[mSideToMove][ROOK] |= rookTo;
+            board[m.from] = 0;
+            board[m.to] = ROOK;
         } 
         else if ((int)m.to - (int)m.from == -2) {
             uint64_t rookFrom = (1ULL << (m.to - 2));
@@ -204,20 +219,27 @@ void Position::doMove(Move m) {
 
             pieces[mSideToMove][ROOK] &= ~rookFrom;
             pieces[mSideToMove][ROOK] |= rookTo;
+            board[m.from] = 0;
+            board[m.to] = ROOK;
         }
     } 
     else if (startBit & pieces[mSideToMove][KNIGHT]) {
         pieces[mSideToMove][KNIGHT] &= ~startBit;
         pieces[mSideToMove][KNIGHT] |= endBit;
+        board[m.from] = 0;
+        board[m.to] = KNIGHT;
         state.movedPiece = KNIGHT;
         mEnPassentSquare = 0;
     } else {
         pieces[mSideToMove][PAWN] &= ~startBit;
+        board[m.from] = 0;
 
         if (m.promotion == NOPIECE) {
             pieces[mSideToMove][PAWN] |= endBit;
+            board[m.to] = PAWN;
         } else {
             pieces[mSideToMove][m.promotion] |= endBit;
+            board[m.to] = m.promotion;
         }
 
         if(endBit == mEnPassentSquare) {
@@ -227,6 +249,7 @@ void Position::doMove(Move m) {
           uint64_t enemyPawnLoc = (1ULL << (m.to + capturedOffset));
 
           pieces[(mSideToMove == WHITE ? BLACK : WHITE)][PAWN] &= ~enemyPawnLoc;
+          board[m.to + capturedOffset] = 0;
         }
 
         if (abs(m.to - m.from) == 16) {
@@ -306,10 +329,14 @@ void Position::undoMove(Move m) {
     if (m.promotion != NOPIECE) {
         pieces[mSideToMove][m.promotion] &= ~(1ULL << m.to);
         pieces[mSideToMove][PAWN] |= (1ULL << m.from);
+        board[m.to] = 0;
+        board[m.from] = PAWN;
     } 
     else {
         pieces[mSideToMove][oldState.movedPiece] &= ~(1ULL << m.to);
         pieces[mSideToMove][oldState.movedPiece] |= (1ULL << m.from);
+        board[m.to] = 0;
+        board[m.from] = oldState.movedPiece;
 
         if(oldState.movedPiece == KING) {
           if((int)m.to - (int)m.from == 2) {
@@ -317,12 +344,16 @@ void Position::undoMove(Move m) {
             uint64_t rookTo = (1ULL << (m.to - 1));
             pieces[mSideToMove][ROOK] &= ~rookTo;
             pieces[mSideToMove][ROOK] |= rookFrom;
+            board[m.to - 1] = 0;
+            board[m.to + 1] = ROOK;
 
           } else if((int)m.to - (int)m.from == -2) {
             uint64_t rookFrom = (1ULL << (m.to - 2));
             uint64_t rookTo = (1ULL << (m.to + 1));
             pieces[mSideToMove][ROOK] &= ~rookTo;
             pieces[mSideToMove][ROOK] |= rookFrom;
+            board[m.to + 1] = 0;
+            board[m.to - 2] = ROOK;
 
           }
         }
@@ -334,9 +365,11 @@ void Position::undoMove(Move m) {
         if(oldState.movedPiece == PAWN && (1ULL << m.to) == oldState.epSquare) {
           int captureOffset = (mSideToMove == WHITE) ? -8 : 8;
           pieces[enemy][PAWN] |= (1ULL << (m.to + captureOffset));
+          board[m.to + captureOffset] = PAWN;
 
         } else {
           pieces[enemy][oldState.capturedPiece] |= (1ULL << m.to);
+          board[m.to] = oldState.capturedPiece;
         }
     }
 
@@ -349,7 +382,7 @@ void Position::undoMove(Move m) {
 
 }
 
-void Position::getMoves(Color color, std::vector<Move>& moveList) {
+void Position::getMoves(Color color, MoveList& moveList) {
   Color enemy = (color == WHITE) ? BLACK : WHITE;
   uint64_t enemyKing = pieces[enemy][KING];
   if (enemyKing == 0) {
@@ -365,13 +398,22 @@ void Position::getMoves(Color color, std::vector<Move>& moveList) {
 
       while(validTargets) {
         int targetSquare = __builtin_ctzll(validTargets);
+        int victim = board[targetSquare];
+        int aggressor = i;
+        int score = 0;
+
+        if(victim != NOPIECE) {
+          static const int victimScores[] = { 100, 300, 310, 500, 900, 0 };
+          score = victimScores[victim] - victimScores[aggressor] + 10000;
+        }
+
         if(i == PAWN && (targetSquare/8) == ((color == WHITE) ? 7 : 0)) {
-          moveList.push_back(Move(sourceSquare, targetSquare, QUEEN));
-          moveList.push_back(Move(sourceSquare, targetSquare, KNIGHT));
-          moveList.push_back(Move(sourceSquare, targetSquare, BISHOP));
-          moveList.push_back(Move(sourceSquare, targetSquare, ROOK));
+          moveList.add(Move(sourceSquare, targetSquare, QUEEN), score);
+          moveList.add(Move(sourceSquare, targetSquare, KNIGHT), score);
+          moveList.add(Move(sourceSquare, targetSquare, BISHOP), score);
+          moveList.add(Move(sourceSquare, targetSquare, ROOK), score);
         } else {
-          moveList.push_back(Move(sourceSquare, targetSquare, NOPIECE));
+          moveList.add(Move(sourceSquare, targetSquare, NOPIECE), score);
         }
         validTargets &= (validTargets - 1);
       }
@@ -379,51 +421,40 @@ void Position::getMoves(Color color, std::vector<Move>& moveList) {
     }
   }
   if (color == WHITE) {
-        // --- WHITE SHORT CASTLING (Kingside) ---
-        // Checks: Right exists AND f1(5), g1(6) are empty
         if ((mCastleRight & WHITE_OO) && 
             !(occupancies[2] & ((1ULL << 5) | (1ULL << 6)))) {
-            // Checks: King(e1) not in check, f1 not attacked, g1 not attacked
             if (!isSquareAttacked(4, BLACK) && 
                 !isSquareAttacked(5, BLACK) && 
                 !isSquareAttacked(6, BLACK)) {
-                moveList.push_back(Move(4, 6, NOPIECE)); // e1g1
+                moveList.add(Move(4, 6, NOPIECE), 0); // e1g1
             }
         }
 
-        // --- WHITE LONG CASTLING (Queenside) ---
-        // Checks: Right exists AND b1(1), c1(2), d1(3) are empty
         if ((mCastleRight & WHITE_OOO) && 
             !(occupancies[2] & ((1ULL << 1) | (1ULL << 2) | (1ULL << 3)))) {
-            // Checks: King(e1) not in check, d1 not attacked, c1 not attacked
-            // Note: b1 does not need to be safe, only empty.
             if (!isSquareAttacked(4, BLACK) && 
                 !isSquareAttacked(3, BLACK) && 
                 !isSquareAttacked(2, BLACK)) {
-                moveList.push_back(Move(4, 2, NOPIECE)); // e1c1
+                moveList.add(Move(4, 2, NOPIECE), 0); // e1c1
             }
         }
     } 
     else {
-        // --- BLACK SHORT CASTLING (Kingside) ---
-        // Checks: Right exists AND f8(61), g8(62) are empty
         if ((mCastleRight & BLACK_OO) && 
             !(occupancies[2] & ((1ULL << 61) | (1ULL << 62)))) {
             if (!isSquareAttacked(60, WHITE) && 
                 !isSquareAttacked(61, WHITE) && 
                 !isSquareAttacked(62, WHITE)) {
-                moveList.push_back(Move(60, 62, NOPIECE)); // e8g8
+                moveList.add(Move(60, 62, NOPIECE), 0); // e8g8
             }
         }
 
-        // --- BLACK LONG CASTLING (Queenside) ---
-        // Checks: Right exists AND b8(57), c8(58), d8(59) are empty
         if ((mCastleRight & BLACK_OOO) && 
             !(occupancies[2] & ((1ULL << 57) | (1ULL << 58) | (1ULL << 59)))) {
             if (!isSquareAttacked(60, WHITE) && 
                 !isSquareAttacked(59, WHITE) && 
                 !isSquareAttacked(58, WHITE)) {
-                moveList.push_back(Move(60, 58, NOPIECE)); // e8c8
+                moveList.add(Move(60, 58, NOPIECE), 0); // e8c8
             }
         }
     }
@@ -432,14 +463,10 @@ void Position::getMoves(Color color, std::vector<Move>& moveList) {
 void Position::printBoard() {
     std::cout << "   occupancies both" << std::endl;
     std::cout << "  +-----------------+" << std::endl;
-    // Iterate Ranks from 7 (Row 8) down to 0 (Row 1)
     for (int rank = 7; rank >= 0; rank--) {
         std::cout << rank + 1 << " | "; // Print Rank Number
         for (int file = 0; file < 8; file++) {
-            // Calculate the actual square index (0 to 63)
             int square = rank * 8 + file;
-            
-            // Check the bit at 'square'
             if ((occupancies[2] >> square) & 1) {
                 std::cout << "1 ";
             } else {
@@ -450,32 +477,9 @@ void Position::printBoard() {
     }
     std::cout << "  +-----------------+" << std::endl;
     std::cout << "    a b c d e f g h" << std::endl;
-    /*
-    std::cout << "   attacks pawns" << std::endl;
-    std::cout << "  +-----------------+" << std::endl;
-    uint64_t attacksP = mAttacksP;
-    // Iterate Ranks from 7 (Row 8) down to 0 (Row 1)
-    for (int rank = 7; rank >= 0; rank--) {
-        std::cout << rank + 1 << " | "; // Print Rank Number
-        for (int file = 0; file < 8; file++) {
-            // Calculate the actual square index (0 to 63)
-            int square = rank * 8 + file;
-            
-            // Check the bit at 'square'
-            if ((attacksP >> square) & 1) {
-                std::cout << "1 ";
-            } else {
-                std::cout << ". ";
-            }
-        }
-        std::cout << "|" << std::endl;
-    }
-    std::cout << "  +-----------------+" << std::endl;
-    std::cout << "    a b c d e f g h" << std::endl;
-    */
 }
 
-Position::Position(/* args */) {
+Position::Position() {
 }
 Position::~Position() {
 }

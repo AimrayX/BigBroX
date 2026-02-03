@@ -28,6 +28,32 @@ uint64_t ZobristHashing::getHash() const {
     return currentHash;
 }
 
+void Engine::pickMove(MoveList& list, int moveNum) {
+    int bestIndex = -1;
+    int bestScore = -1000000; // Start with a very low score
+
+    // 1. Find the move with the highest score
+    for (int i = moveNum; i < list.count; ++i) {
+        if (list.scores[i] > bestScore) {
+            bestScore = list.scores[i];
+            bestIndex = i;
+        }
+    }
+
+    // 2. Swap it with the move at 'moveNum' so it gets searched next
+    if (bestIndex != -1) {
+        // Swap moves
+        Move tempMove = list.moves[moveNum];
+        list.moves[moveNum] = list.moves[bestIndex];
+        list.moves[bestIndex] = tempMove;
+
+        // Swap scores (to keep the parallel arrays synced)
+        int tempScore = list.scores[moveNum];
+        list.scores[moveNum] = list.scores[bestIndex];
+        list.scores[bestIndex] = tempScore;
+    }
+}
+
 int Engine::quiescence(Position& pos, int alpha, int beta) {
     // 1. Stand Pat: Assess the static evaluation of the current position.
     // If we don't capture anything else, is this position already good enough?
@@ -44,20 +70,20 @@ int Engine::quiescence(Position& pos, int alpha, int beta) {
     }
 
     // 4. Generate Moves
-    std::vector<Move> moveList;
+    MoveList moveList;
     pos.getMoves(pos.mSideToMove, moveList);
 
     // 5. Loop through ONLY CAPTURES
-    for (const auto& move : moveList) {
+    for (int i = 0; i < moveList.count; i++) {
         // --- FILTER: ONLY CAPTURES ---
         // We check if the destination square has an enemy piece.
         // (Note: This is a simplified check. En Passant needs special handling but this covers 99% of cases)
         Color enemy = (pos.mSideToMove == WHITE) ? BLACK : WHITE;
-        if (pos.occupancies[enemy] & (1ULL << move.to)) {
-            pos.doMove(move);
+        if (pos.occupancies[enemy] & (1ULL << moveList.moves[i].to)) {
+            pos.doMove(moveList.moves[i]);
             // Recursively call quiescence
             int score = -quiescence(pos, -beta, -alpha);
-            pos.undoMove(move);
+            pos.undoMove(moveList.moves[i]);
 
             if (score >= beta) {
                 return beta;
@@ -80,39 +106,41 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
     return quiescence(pos, alpha, beta);
   }
 
-  std::vector<Move> moveList;
+  MoveList moveList;
   pos.getMoves(pos.mSideToMove, moveList);
   int bestScore = -INF;
   int movesSearched = 0;
 
-  for(const auto& move : moveList) {
+  for(int i = 0; i < moveList.count; i++) {
 
-    pos.doMove(move);
+    pickMove(moveList, i);
+
+    pos.doMove(moveList.moves[i]);
 
     Color sideJustMoved = (pos.mSideToMove == WHITE) ? BLACK : WHITE;
     int kingSquare = __builtin_ctzll(pos.pieces[sideJustMoved][KING]);
 
     if (pos.isSquareAttacked(kingSquare, pos.mSideToMove)) {
-        pos.undoMove(move);
+        pos.undoMove(moveList.moves[i]);
         continue;
     }
 
     movesSearched++;
 
     int score = -negaMax(pos, depth -1, -beta, -alpha, stoken);
-    pos.undoMove(move);
+    pos.undoMove(moveList.moves[i]);
 
     if(stoken.stop_requested()) return 0;
 
     if(score > bestScore) {
       if(depth == mCurrentDepth) {
-        mLastBestMove = move; 
+        mLastBestMove = moveList.moves[i]; 
       }
       bestScore = score;
 
       if(score > alpha) {
         alpha = score;
-        pvTable[ply][ply] = move;
+        pvTable[ply][ply] = moveList.moves[i];
 
         int nextPly = ply + 1;
         for(int i = nextPly; i < pvLength[nextPly]; i++) {

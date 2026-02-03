@@ -28,6 +28,7 @@ public:
 
     uint64_t pieces[2][6];
     uint64_t occupancies[3];
+    int board[64];
     
     std::vector<StateInfo> history;
 
@@ -36,7 +37,7 @@ public:
     int setStartingPosition(std::string startingPosition);
     void doMove(Move m);
     void undoMove(Move m);
-    void getMoves(Color color, std::vector<Move>& moveList);
+    void getMoves(Color color, MoveList& moveList);
     bool isSquareAttacked(int square, Color sideAttacking);
 
     void printBoard();

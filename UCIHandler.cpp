@@ -23,6 +23,7 @@ std::string UCIHandler::getStartingPosition(std::string commandLine) {
         fenPosition += " " + token;
       }
     } else if (token == "fen") {
+      fenPosition = "";
       while(ss >> token && token != "moves") {
         fenPosition += token + " ";
       }
@@ -94,7 +95,6 @@ int UCIHandler::loop() {
             std::cout << "info engine stopped retrieving best move" << std::endl;
             Move finalMove = searchResult.load();
 
-            std::cout << "info retrieved search result " << (int)finalMove.from << (int)finalMove.to << std::endl;
             if(finalMove.to < Squares.size()) std::cout << "bestmove " << Squares.at((int)finalMove.from) <<Squares.at((int)finalMove.to) << std::endl;
             break;
           }
