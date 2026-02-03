@@ -257,6 +257,7 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
     if(score > bestScore) {
 
       bestScore = score;
+      bestMove = moveList.moves[i];
       // Always update PV for the best move found so far
       pvTable[ply][ply] = moveList.moves[i];
 
