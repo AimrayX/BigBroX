@@ -9,9 +9,6 @@
 #include "utils.hpp"
 #include "attack.hpp"
 
-// =============================================================
-// 1. Define Zobrist Keys (Global/Namespace to this file)
-// =============================================================
 namespace Zobrist {
     uint64_t pieceKeys[2][6][64]; // [Color][Piece][Square]
     uint64_t enPassantKeys[64];   // [Square]
@@ -42,11 +39,11 @@ namespace Zobrist {
     }
 }
 
-// =============================================================
-// 3. setStartingPosition (Calculate fresh hash)
-// =============================================================
 int Position::setStartingPosition(std::string startingPosition) {
     // Clear existing state first
+
+    history.clear();
+
     for(int c = 0; c < 2; c++) {
         for(int p = 0; p < 6; p++) {
             pieces[c][p] = 0ULL;

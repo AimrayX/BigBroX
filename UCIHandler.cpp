@@ -72,6 +72,7 @@ int UCIHandler::loop() {
             break;
 
           case UCICommand::UCINewGame:
+            game.engine.tt.clear();
             break;
 
           case UCICommand::SetOption:
