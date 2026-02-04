@@ -1,214 +1,233 @@
 #include "position.hpp"
 
 #include <cstdint>
-#include <sstream>
 #include <iostream>
 #include <random>
+#include <sstream>
 
+#include "attack.hpp"
 #include "types.hpp"
 #include "utils.hpp"
-#include "attack.hpp"
 
-namespace Zobrist {
-    uint64_t pieceKeys[2][6][64]; // [Color][Piece][Square]
-    uint64_t enPassantKeys[64];   // [Square]
-    uint64_t castleKeys[16];      // [CastleRights Mask]
-    uint64_t sideKey;             // XORed if Black to move
-    bool initialized = false;
+const uint64_t NOT_A_FILE = 0xFEFEFEFEFEFEFEFEULL;
+const uint64_t NOT_H_FILE = 0x7F7F7F7F7F7F7F7FULL;
 
-    // Initialize keys with random numbers
-    void init() {
-        if (initialized) return;
-        
-        std::mt19937_64 gen(123456789); // Fixed seed for reproducibility
-        std::uniform_int_distribution<uint64_t> dist;
+int PST_CACHE[2][6][64];  // Definition
 
-        for (int c = 0; c < 2; c++) {
-            for (int p = 0; p < 6; p++) {
-                for (int s = 0; s < 64; s++) {
-                    pieceKeys[c][p][s] = dist(gen);
-                }
-            }
-        }
+void initPST() {
+  for (int p = 0; p < 6; p++) {
+    for (int s = 0; s < 64; s++) {
+      // White: Direct copy
+      PST_CACHE[WHITE][p][s] = pieceValues[p] + PST[p][s];
 
-        for (int i = 0; i < 64; i++) enPassantKeys[i] = dist(gen);
-        for (int i = 0; i < 16; i++) castleKeys[i] = dist(gen);
-        sideKey = dist(gen);
-        
-        initialized = true;
+      // Black: Mirror and Negate
+      // Note: We bake the piece value into the table too!
+      // This saves the "val + PST..." addition at runtime.
+      PST_CACHE[BLACK][p][s] = -(pieceValues[p] + PST[p][s ^ 56]);
     }
+  }
 }
 
-bool Position::isRepetition() {
-    int n = history.size();
+namespace Zobrist {
+uint64_t pieceKeys[2][6][64];  // [Color][Piece][Square]
+uint64_t enPassantKeys[64];    // [Square]
+uint64_t castleKeys[16];       // [CastleRights Mask]
+uint64_t sideKey;              // XORed if Black to move
+bool initialized = false;
 
-    for (int i = n - 2; i >= 0 && i >= n - mHalfMove; i -= 2) {
-        if (history[i].zobristKey == mHash) {
-            return true;
-        }
+void init() {
+  if (initialized) return;
+  std::mt19937_64 gen(123456789);  // Fixed seed for reproducibility
+  std::uniform_int_distribution<uint64_t> dist;
+
+  for (int c = 0; c < 2; c++) {
+    for (int p = 0; p < 6; p++) {
+      for (int s = 0; s < 64; s++) {
+        pieceKeys[c][p][s] = dist(gen);
+      }
     }
+  }
 
-    return false;
+  for (int i = 0; i < 64; i++) enPassantKeys[i] = dist(gen);
+  for (int i = 0; i < 16; i++) castleKeys[i] = dist(gen);
+  sideKey = dist(gen);
+  initialized = true;
+}
+}  // namespace Zobrist
+
+bool Position::isRepetition() {
+  int n = gamePly;
+
+  for (int i = n - 2; i >= 0 && i >= n - mHalfMove; i -= 2) {
+    if (history[i].zobristKey == mHash) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 int Position::getPieceValue(int piece, int square, Color color) {
-    int val = pieceValues[piece];
-    if (color == WHITE) {
-        return val + PST[piece][square];
-    } else {
-        // Mirror square for Black and negate value
-        return -(val + PST[piece][square ^ 56]);
-    }
+  return PST_CACHE[color][piece][square];
 }
 
 int Position::setStartingPosition(std::string startingPosition) {
-    // Clear existing state first
-    mPosScore = 0;
+  // Clear existing state first
+  mPosScore = 0;
 
-    history.clear();
+  gamePly = 0;
 
-    for(int c = 0; c < 2; c++) {
-        for(int p = 0; p < 6; p++) {
-            pieces[c][p] = 0ULL;
-        }
-    }
-
-    for(int k = 0; k < 64; k++) {
-      board[k] = NOPIECE;
-    }
-
-    occupancies[0] = 0ULL; 
-    occupancies[1] = 0ULL; 
-    occupancies[2] = 0ULL;
-
-    mHash = 0ULL;
-
-    int rank = 7;
-    int file = 0;
-
-    // We only iterate the board part of the FEN (stop at space)
-    std::istringstream iss(startingPosition);
-    std::string boardPart;
-    std::getline(iss, boardPart, ' ');
-
-    for (char c : boardPart) {
-        if (c == '/') {
-            rank--;
-            file = 0;
-        } 
-        else if (isdigit(c)) {
-            // Advance the file by the number value (empty squares)
-            file += (c - '0');
-        } 
-        else {
-            // It's a piece
-            int square = rank * 8 + file;
-            int type = NOPIECE;
-            int color = (isupper(c)) ? WHITE : BLACK;
-            char lowerC = tolower(c);
-
-            if (lowerC == 'p') type = PAWN;
-            else if (lowerC == 'n') type = KNIGHT;
-            else if (lowerC == 'b') type = BISHOP;
-            else if (lowerC == 'r') type = ROOK;
-            else if (lowerC == 'q') type = QUEEN;
-            else if (lowerC == 'k') type = KING;
-
-            if (type != NOPIECE) {
-                pieces[color][type] |= (1ULL << square);
-                occupancies[color] |= (1ULL << square);
-                board[square] = type;
-            }
-            file++;
-        }
-    }
-
-    occupancies[2] = occupancies[WHITE] | occupancies[BLACK];
-
-    std::string temp;
-
-    if (std::getline(iss, temp, ' ')) {
-         if (temp == "w") {
-            mSideToMove = WHITE;
-        } else if (temp == "b") {
-            mSideToMove = BLACK;
-        }
-    }
-
-    mCastleRight = 0;
-    if (std::getline(iss, temp, ' ')) {
-        for (char c : temp) {
-            if (c == 'K') mCastleRight |= WHITE_OO;
-            else if (c == 'Q') mCastleRight |= WHITE_OOO;
-            else if (c == 'k') mCastleRight |= BLACK_OO;
-            else if (c == 'q') mCastleRight |= BLACK_OOO;
-        }
-    }
-
-    // En Passant
-    if (std::getline(iss, temp, ' ')) {
-        mEnPassentSquare = util::mAlgebraicToBit(temp);
-    }
-
-    // Half/Full moves
-    if (std::getline(iss, temp, ' ')) mHalfMove = std::stoi(temp);
-    if (std::getline(iss, temp, ' ')) mFullMove = std::stoi(temp); 
-
-    // 1. Pieces
+  for (int c = 0; c < 2; c++) {
     for (int p = 0; p < 6; p++) {
-        uint64_t w = pieces[WHITE][p];
-        while (w) {
-            int sq = __builtin_ctzll(w);
-            mPosScore += getPieceValue(p, sq, WHITE);
-            mHash ^= Zobrist::pieceKeys[WHITE][p][sq];
-            w &= (w - 1);
-        }
-        uint64_t b = pieces[BLACK][p];
-        while (b) {
-            int sq = __builtin_ctzll(b);
-            mPosScore += getPieceValue(p, sq, BLACK);
-            mHash ^= Zobrist::pieceKeys[BLACK][p][sq];
-            b &= (b - 1);
-        }
+      pieces[c][p] = 0ULL;
     }
+  }
 
-    // 2. En Passant
-    if (mEnPassentSquare) {
-        int sq = __builtin_ctzll(mEnPassentSquare);
-        mHash ^= Zobrist::enPassantKeys[sq];
+  for (int k = 0; k < 64; k++) {
+    board[k] = NOPIECE;
+  }
+
+  occupancies[0] = 0ULL;
+  occupancies[1] = 0ULL;
+  occupancies[2] = 0ULL;
+
+  mHash = 0ULL;
+
+  int rank = 7;
+  int file = 0;
+
+  // We only iterate the board part of the FEN (stop at space)
+  std::istringstream iss(startingPosition);
+  std::string boardPart;
+  std::getline(iss, boardPart, ' ');
+
+  for (char c : boardPart) {
+    if (c == '/') {
+      rank--;
+      file = 0;
+    } else if (isdigit(c)) {
+      // Advance the file by the number value (empty squares)
+      file += (c - '0');
+    } else {
+      // It's a piece
+      int square = rank * 8 + file;
+      int type = NOPIECE;
+      int color = (isupper(c)) ? WHITE : BLACK;
+      char lowerC = tolower(c);
+
+      if (lowerC == 'p')
+        type = PAWN;
+      else if (lowerC == 'n')
+        type = KNIGHT;
+      else if (lowerC == 'b')
+        type = BISHOP;
+      else if (lowerC == 'r')
+        type = ROOK;
+      else if (lowerC == 'q')
+        type = QUEEN;
+      else if (lowerC == 'k')
+        type = KING;
+
+      if (type != NOPIECE) {
+        pieces[color][type] |= (1ULL << square);
+        occupancies[color] |= (1ULL << square);
+        board[square] = type;
+      }
+      file++;
     }
+  }
 
-    // 3. Castle Rights
-    mHash ^= Zobrist::castleKeys[mCastleRight];
+  occupancies[2] = occupancies[WHITE] | occupancies[BLACK];
 
-    // 4. Side to Move
-    if (mSideToMove == BLACK) {
-        mHash ^= Zobrist::sideKey;
+  std::string temp;
+
+  if (std::getline(iss, temp, ' ')) {
+    if (temp == "w") {
+      mSideToMove = WHITE;
+    } else if (temp == "b") {
+      mSideToMove = BLACK;
     }
+  }
 
-    return 0;
+  mCastleRight = 0;
+  if (std::getline(iss, temp, ' ')) {
+    for (char c : temp) {
+      if (c == 'K')
+        mCastleRight |= WHITE_OO;
+      else if (c == 'Q')
+        mCastleRight |= WHITE_OOO;
+      else if (c == 'k')
+        mCastleRight |= BLACK_OO;
+      else if (c == 'q')
+        mCastleRight |= BLACK_OOO;
+    }
+  }
+
+  // En Passant
+  if (std::getline(iss, temp, ' ')) {
+    mEnPassentSquare = util::mAlgebraicToBit(temp);
+  }
+
+  // Half/Full moves
+  if (std::getline(iss, temp, ' ')) mHalfMove = std::stoi(temp);
+  if (std::getline(iss, temp, ' ')) mFullMove = std::stoi(temp);
+
+  // 1. Pieces
+  for (int p = 0; p < 6; p++) {
+    uint64_t w = pieces[WHITE][p];
+    while (w) {
+      int sq = __builtin_ctzll(w);
+      mPosScore += getPieceValue(p, sq, WHITE);
+      mHash ^= Zobrist::pieceKeys[WHITE][p][sq];
+      w &= (w - 1);
+    }
+    uint64_t b = pieces[BLACK][p];
+    while (b) {
+      int sq = __builtin_ctzll(b);
+      mPosScore += getPieceValue(p, sq, BLACK);
+      mHash ^= Zobrist::pieceKeys[BLACK][p][sq];
+      b &= (b - 1);
+    }
+  }
+
+  // 2. En Passant
+  if (mEnPassentSquare) {
+    int sq = __builtin_ctzll(mEnPassentSquare);
+    mHash ^= Zobrist::enPassantKeys[sq];
+  }
+
+  // 3. Castle Rights
+  mHash ^= Zobrist::castleKeys[mCastleRight];
+
+  // 4. Side to Move
+  if (mSideToMove == BLACK) {
+    mHash ^= Zobrist::sideKey;
+  }
+
+  return 0;
 }
 
 uint64_t Position::attackGeneration(int square, int type, Color color) {
-    uint64_t attack = 0;
-    if (type == ROOK) {
-        attack = attack::getRookAttacks(square, occupancies[2]);
-    } else if (type == BISHOP) {
-        attack = attack::getBishopAttacks(square, occupancies[2]);
-    } else if (type == QUEEN) {
-        attack = (attack::getRookAttacks(square, occupancies[2]) | attack::getBishopAttacks(square, occupancies[2]));
-    } else if (type == KING) {
-        attack = attack::kingAttacks[square];
-    } else if (type == KNIGHT) {
-        attack = attack::knightAttacks[square];
-    } else {
-        uint64_t extendedOccupancy = occupancies[2];
-        if(mEnPassentSquare != 0) {
-          extendedOccupancy |= mEnPassentSquare;
-        }
-        attack = attack::getPawnAttacks(square, color, extendedOccupancy);
+  uint64_t attack = 0;
+  if (type == ROOK) {
+    attack = attack::getRookAttacks(square, occupancies[2]);
+  } else if (type == BISHOP) {
+    attack = attack::getBishopAttacks(square, occupancies[2]);
+  } else if (type == QUEEN) {
+    attack = (attack::getRookAttacks(square, occupancies[2]) |
+              attack::getBishopAttacks(square, occupancies[2]));
+  } else if (type == KING) {
+    attack = attack::kingAttacks[square];
+  } else if (type == KNIGHT) {
+    attack = attack::knightAttacks[square];
+  } else {
+    uint64_t extendedOccupancy = occupancies[2];
+    if (mEnPassentSquare != 0) {
+      extendedOccupancy |= mEnPassentSquare;
     }
-    return attack;
+    attack = attack::getPawnAttacks(square, color, extendedOccupancy);
+  }
+  return attack;
 }
 
 uint64_t Position::getPseudoLegalMoves(int square, int type, Color color) {
@@ -216,398 +235,406 @@ uint64_t Position::getPseudoLegalMoves(int square, int type, Color color) {
 }
 
 void Position::getCaptures(Color color, MoveList& moveList) {
-    Color enemy = (color == WHITE) ? BLACK : WHITE;
-    uint64_t enemyKing = pieces[enemy][KING];
+  Color enemy = (color == WHITE) ? BLACK : WHITE;
 
-    // Identify the "danger zones" (enemy pieces + en passant square)
-    // We will use this to verify if a move is a capture.
-    uint64_t captureMask = occupancies[enemy];
-    if (mEnPassentSquare != 0) {
-        captureMask |= mEnPassentSquare;
+  // 1. Define the target mask (Enemy pieces + En Passant square)
+  // We ignore the enemy King for captures (it's illegal to capture the King),
+  // but we can filter that out inside the loop or just assume pseudo-legal generation
+  // handles it if your engine logic requires it.
+  // Standard practice: Don't generate king captures.
+  uint64_t enemies = occupancies[enemy];
+  uint64_t captureMask = enemies;
+
+  if (mEnPassentSquare != 0) {
+    captureMask |= mEnPassentSquare;
+  }
+
+  // --- PAWN CAPTURES (Bitwise Optimization) ---
+  // Instead of iterating every pawn, we shift the entire bitboard.
+  uint64_t pawns = pieces[color][PAWN];
+  uint64_t pawnAttacks = 0ULL;
+
+  if (color == WHITE) {
+    // Capture North-East (<< 9) - Exclude H file to avoid wrapping
+    uint64_t ne = (pawns << 9) & NOT_A_FILE;
+    // Capture North-West (<< 7) - Exclude A file
+    uint64_t nw = (pawns << 7) & NOT_H_FILE;
+
+    pawnAttacks = (ne | nw) & captureMask;
+
+    while (pawnAttacks) {
+      int to = __builtin_ctzll(pawnAttacks);
+
+      // Determine which pawn moved.
+      // If we came from NE (to-9), check if a pawn was there.
+      // Note: It's possible for a square to be attacked by two pawns.
+      // We must check valid sources.
+
+      int from_ne = to - 9;
+      int from_nw = to - 7;
+
+      // Check potential source squares
+      if (to >= 9 && (pawns & (1ULL << from_ne)) && (from_ne % 8 != 7)) {
+        addPawnCaptureMove(from_ne, to, enemies, moveList);
+      }
+      // We use 'else if' or just separate checks.
+      // Separate checks are needed if two pawns capture to the same square.
+      if (to >= 7 && (pawns & (1ULL << from_nw)) && (from_nw % 8 != 0)) {
+        addPawnCaptureMove(from_nw, to, enemies, moveList);
+      }
+
+      pawnAttacks &= (pawnAttacks - 1);  // Clear LS1B
     }
+  } else {  // BLACK
+    // Capture South-East (>> 7) - Exclude A file
+    uint64_t se = (pawns >> 7) & NOT_A_FILE;
+    // Capture South-West (>> 9) - Exclude H file
+    uint64_t sw = (pawns >> 9) & NOT_H_FILE;
 
-    for (int i = 0; i < 6; i++) {
-        uint64_t piece = pieces[color][i];
-        while (piece) {
-            int sourceSquare = __builtin_ctzll(piece);
-            
-            // Get all moves for this piece
-            uint64_t validTargets = getPseudoLegalMoves(sourceSquare, i, color);
-            
-            // CRITICAL OPTIMIZATION: 
-            // Only keep moves that land on enemy pieces (Captures) 
-            // or the En Passant square.
-            // Note: We don't filter Promotions here yet because a "Quiet Promotion" 
-            // (Pushing pawn to Q on empty square) is technically not a capture 
-            // but extremely dangerous, so we usually want to keep it.
-            
-            // 1. Separate Captures (using bitwise AND)
-            uint64_t captureMoves = validTargets & captureMask;
+    pawnAttacks = (se | sw) & captureMask;
 
-            // 2. If it is a pawn, we also want to keep Promotions (even if not capturing)
-            //    A pawn reaches rank 8 (row 0 or 7).
-            if (i == PAWN) {
-                uint64_t rank7Mask = (color == WHITE) ? 0xFF00000000000000ULL : 0x00000000000000FFULL;
-                // If the move lands on rank 8, keep it even if it's not a capture
-                uint64_t promotionMoves = validTargets & rank7Mask;
-                captureMoves |= promotionMoves; 
-            }
+    while (pawnAttacks) {
+      int to = __builtin_ctzll(pawnAttacks);
+      int from_se = to + 7;
+      int from_sw = to + 9;
 
-            // Ensure we don't capture the King (illegal)
-            captureMoves &= ~enemyKing;
+      if (from_se < 64 && (pawns & (1ULL << from_se)) && (from_se % 8 != 0)) {
+        addPawnCaptureMove(from_se, to, enemies, moveList);
+      }
+      if (from_sw < 64 && (pawns & (1ULL << from_sw)) && (from_sw % 8 != 7)) {
+        addPawnCaptureMove(from_sw, to, enemies, moveList);
+      }
+      pawnAttacks &= (pawnAttacks - 1);
+    }
+  }
 
-            while (captureMoves) {
-                int targetSquare = __builtin_ctzll(captureMoves);
-                int victim = board[targetSquare];
-                int score = 0;
+  // --- OTHER PIECES (Standard Loop but pre-masked) ---
+  // Iterate from KNIGHT (1) to KING (5)
+  for (int type = KNIGHT; type <= KING; type++) {
+    uint64_t pieceBB = pieces[color][type];
 
-                // Score logic (MVV-LVA)
-                // Note: En Passant victim is NOPIECE on the board array, need to handle score manually
-                if (victim != NOPIECE) {
-                    static const int victimScores[] = { 100, 300, 310, 500, 900, 0 };
-                    static const int aggressorScores[] = { 100, 300, 310, 500, 900, 0 }; // Approx values
-                    score = victimScores[victim] - aggressorScores[i] + 10000;
-                } 
-                else if (i == PAWN && (1ULL << targetSquare) == mEnPassentSquare) {
-                    // En Passant Capture Score
-                    score = 100 + 10000; 
-                }
-                // Promotion Score (Queen prom is huge)
-                if (i == PAWN && (targetSquare / 8 == 0 || targetSquare / 8 == 7)) {
-                    score += 9000; 
-                }
+    while (pieceBB) {
+      int from = __builtin_ctzll(pieceBB);
 
-                // Add to list
-                if (i == PAWN && (targetSquare / 8 == ((color == WHITE) ? 7 : 0))) {
-                    moveList.add(Move(sourceSquare, targetSquare, QUEEN), score);
-                    moveList.add(Move(sourceSquare, targetSquare, KNIGHT), score);
-                    moveList.add(Move(sourceSquare, targetSquare, BISHOP), score);
-                    moveList.add(Move(sourceSquare, targetSquare, ROOK), score);
-                } else {
-                    moveList.add(Move(sourceSquare, targetSquare, NOPIECE), score);
-                }
+      // OPTIMIZATION: Get attacks and IMMEDIATELY mask with captureMask
+      // This prevents generating quiet moves and then filtering them later.
+      uint64_t attacks = attackGeneration(from, type, color) & enemies;
 
-                captureMoves &= (captureMoves - 1);
-            }
-            piece &= (piece - 1);
+      while (attacks) {
+        int to = __builtin_ctzll(attacks);
+
+        int victim = board[to];
+        // Note: King capture check should theoretically not be needed if move gen is pseudo-legal
+        // and previous moves were legal, but we keep safety if needed.
+        if (victim != KING) {
+          int score = 0;
+          if (victim != NOPIECE) {
+            static const int victimScores[] = {100, 300, 310, 500, 900, 20000};
+            static const int aggressorScores[] = {100, 300, 310, 500, 900, 20000};
+            score = victimScores[victim] - (aggressorScores[type] / 10) + 10000;
+          }
+          moveList.add(Move(from, to, NOPIECE), score);
         }
+
+        attacks &= (attacks - 1);
+      }
+
+      pieceBB &= (pieceBB - 1);
     }
+  }
+}
+
+// 3. Helper function for adding pawn moves (handling promotions/En Passant)
+// Add this as a private helper method in your Position class or inline it.
+inline void Position::addPawnCaptureMove(int from, int to, uint64_t enemies, MoveList& moveList) {
+  int victim = board[to];
+  int score = 0;
+
+  // En Passant Case
+  if (victim == NOPIECE) {  // Must be EP if we are here
+    score = 105 + 10000;    // Value of pawn capture
+    moveList.add(Move(from, to, NOPIECE), score);
+    return;
+  }
+
+  // Normal Capture Score
+  static const int victimScores[] = {100, 300, 310, 500, 900, 20000};
+  score = victimScores[victim] - 10 + 10000;  // Pawn value ~100/10
+
+  // Promotion Check
+  // If target is Rank 0 or Rank 7
+  if (to >= 56 || to <= 7) {
+    score += 9000;  // Promotion bonus
+    moveList.add(Move(from, to, QUEEN), score);
+    moveList.add(Move(from, to, KNIGHT), score);
+    moveList.add(Move(from, to, ROOK), score);
+    moveList.add(Move(from, to, BISHOP), score);
+  } else {
+    moveList.add(Move(from, to, NOPIECE), score);
+  }
 }
 
 bool Position::isSquareAttacked(int square, Color sideAttacking) {
-    Color defendingSide = (sideAttacking == WHITE) ? BLACK : WHITE;
-    if (attack::pawnAttacks[defendingSide][square] & pieces[sideAttacking][PAWN]) {
-        return true;
-    }
+  Color defendingSide = (sideAttacking == WHITE) ? BLACK : WHITE;
+  if (attack::pawnAttacks[defendingSide][square] & pieces[sideAttacking][PAWN]) {
+    return true;
+  }
 
-    if (attack::knightAttacks[square] & pieces[sideAttacking][KNIGHT]) {
-        return true;
-    }
+  if (attack::knightAttacks[square] & pieces[sideAttacking][KNIGHT]) {
+    return true;
+  }
 
-    if (attack::kingAttacks[square] & pieces[sideAttacking][KING]) {
-        return true;
-    }
+  if (attack::kingAttacks[square] & pieces[sideAttacking][KING]) {
+    return true;
+  }
 
-    uint64_t bishopsQueens = pieces[sideAttacking][BISHOP] | pieces[sideAttacking][QUEEN];
-    if (attack::getBishopAttacks(square, occupancies[2]) & bishopsQueens) {
-        return true;
-    }
+  uint64_t bishopsQueens = pieces[sideAttacking][BISHOP] | pieces[sideAttacking][QUEEN];
+  if (attack::getBishopAttacks(square, occupancies[2]) & bishopsQueens) {
+    return true;
+  }
 
-    uint64_t rooksQueens = pieces[sideAttacking][ROOK] | pieces[sideAttacking][QUEEN];
-    if (attack::getRookAttacks(square, occupancies[2]) & rooksQueens) {
-        return true;
-    }
+  uint64_t rooksQueens = pieces[sideAttacking][ROOK] | pieces[sideAttacking][QUEEN];
+  if (attack::getRookAttacks(square, occupancies[2]) & rooksQueens) {
+    return true;
+  }
 
-    return false;
+  return false;
 }
 
+// Full castling mask array
+// Indices: 0=a1, 7=h1, 56=a8, 63=h8
+static const int castling_rights[64] = {
+    // Rank 1 (White)
+    ~WHITE_OOO, -1, -1, -1, ~(WHITE_OO | WHITE_OOO), -1, -1, ~WHITE_OO,
+    // Rank 2-7 (Empty - no castling rights change)
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    // Rank 8 (Black)
+    ~BLACK_OOO, -1, -1, -1, ~(BLACK_OO | BLACK_OOO), -1, -1, ~BLACK_OO};
+
 void Position::doMove(Move m) {
-    StateInfo state;
+  StateInfo state;
+  state.castle = mCastleRight;
+  state.epSquare = mEnPassentSquare;
+  state.halfMove = mHalfMove;
+  state.psqtScore = mPosScore;
+  state.zobristKey = mHash;
+  state.movedPiece = board[m.from];
+  state.capturedPiece = NOPIECE;
 
-    state.castle = mCastleRight;
-    state.epSquare = mEnPassentSquare;
-    state.halfMove = mHalfMove;
-    state.capturedPiece = NOPIECE;
-    state.movedPiece = NOPIECE;
-    state.zobristKey = mHash;
-    state.psqtScore = mPosScore;
+  Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
 
-    if (mEnPassentSquare) {
-        mHash ^= Zobrist::enPassantKeys[__builtin_ctzll(mEnPassentSquare)];
-    }
-    mHash ^= Zobrist::castleKeys[mCastleRight];
-    mHash ^= Zobrist::sideKey;
+  // Pre-compute masks
+  uint64_t fromMask = 1ULL << m.from;
+  uint64_t toMask = 1ULL << m.to;
+  uint64_t moveMask = fromMask | toMask;
 
-    uint64_t startBit = (1ULL << m.from);
-    uint64_t endBit   = (1ULL << m.to); 
+  // Update hash - remove old state contributions
+  if (mEnPassentSquare) {
+    mHash ^= Zobrist::enPassantKeys[__builtin_ctzll(mEnPassentSquare)];
+  }
+  mHash ^= Zobrist::castleKeys[mCastleRight];
+  mHash ^= Zobrist::sideKey;
+  mHash ^= Zobrist::pieceKeys[mSideToMove][state.movedPiece][m.from];
 
-    // Identify moved piece type
-    int pieceType = NOPIECE;
-    if (startBit & pieces[mSideToMove][PAWN]) pieceType = PAWN;
-    else if (startBit & pieces[mSideToMove][KNIGHT]) pieceType = KNIGHT;
-    else if (startBit & pieces[mSideToMove][BISHOP]) pieceType = BISHOP;
-    else if (startBit & pieces[mSideToMove][ROOK]) pieceType = ROOK;
-    else if (startBit & pieces[mSideToMove][QUEEN]) pieceType = QUEEN;
-    else if (startBit & pieces[mSideToMove][KING]) pieceType = KING;
-    state.movedPiece = pieceType;
+  // Update PSQT score - remove piece from source
+  mPosScore -= getPieceValue(state.movedPiece, m.from, mSideToMove);
 
-    // =============================================================
-    // === INSERT THIS BLOCK FOR INCREMENTAL SCORE UPDATE START ===
-    // =============================================================
-    state.psqtScore = mPosScore; // Save old score to history first!
+  // Handle capture
+  if (board[m.to] != NOPIECE) {
+    state.capturedPiece = board[m.to];
+    pieces[enemy][state.capturedPiece] ^= toMask;
+    occupancies[enemy] ^= toMask;
+    occupancies[2] ^= toMask;
+    mPosScore -= getPieceValue(state.capturedPiece, m.to, enemy);
+    mHash ^= Zobrist::pieceKeys[enemy][state.capturedPiece][m.to];
+    mHalfMove = 0;
+  } else if (state.movedPiece == PAWN) {
+    mHalfMove = 0;
+  } else {
+    mHalfMove++;
+  }
 
-    // 1. Remove the moving piece from source
-    mPosScore -= getPieceValue(pieceType, m.from, mSideToMove);
+  // Handle promotion
+  if (m.promotion != NOPIECE) {
+    pieces[mSideToMove][PAWN] ^= fromMask;
+    pieces[mSideToMove][m.promotion] ^= toMask;
+    occupancies[mSideToMove] ^= moveMask;
+    occupancies[2] ^= moveMask;
 
-    // 2. Add the piece to the destination (handle promotion)
-    if (m.promotion != NOPIECE) {
-        mPosScore += getPieceValue(m.promotion, m.to, mSideToMove);
-    } else {
-        mPosScore += getPieceValue(pieceType, m.to, mSideToMove);
-    }
+    board[m.from] = NOPIECE;
+    board[m.to] = m.promotion;
 
-    // 3. Handle Standard Capture
-    int captured = board[m.to];
-    if (captured != NOPIECE) {
-        Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
-        mPosScore -= getPieceValue(captured, m.to, enemy);
-    }
+    mPosScore += getPieceValue(m.promotion, m.to, mSideToMove);
+    mHash ^= Zobrist::pieceKeys[mSideToMove][m.promotion][m.to];
+    mEnPassentSquare = 0;
+  }
+  // Handle normal moves
+  else {
+    pieces[mSideToMove][state.movedPiece] ^= moveMask;
+    occupancies[mSideToMove] ^= moveMask;
+    occupancies[2] ^= moveMask;
 
-    // 4. Handle En Passant Capture (victim is not at m.to)
-    if (pieceType == PAWN && (1ULL << m.to) == mEnPassentSquare) {
-        Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
-        int captureSq = (mSideToMove == WHITE) ? (m.to - 8) : (m.to + 8);
-        mPosScore -= getPieceValue(PAWN, captureSq, enemy);
-    }
+    board[m.from] = NOPIECE;
+    board[m.to] = state.movedPiece;
 
-    // 5. Handle Castling (Update Rook position)
-    if (pieceType == KING) {
-        // King-side Castling
-        if ((int)m.to - (int)m.from == 2) {
-            int rookFrom = m.to + 1; // h1 or h8
-            int rookTo   = m.to - 1; // f1 or f8
-            mPosScore -= getPieceValue(ROOK, rookFrom, mSideToMove);
-            mPosScore += getPieceValue(ROOK, rookTo, mSideToMove);
-        } 
-        // Queen-side Castling
-        else if ((int)m.to - (int)m.from == -2) {
-            int rookFrom = m.to - 2; // a1 or a8
-            int rookTo   = m.to + 1; // d1 or d8
-            mPosScore -= getPieceValue(ROOK, rookFrom, mSideToMove);
-            mPosScore += getPieceValue(ROOK, rookTo, mSideToMove);
-        }
-    }
+    mPosScore += getPieceValue(state.movedPiece, m.to, mSideToMove);
+    mHash ^= Zobrist::pieceKeys[mSideToMove][state.movedPiece][m.to];
 
-    // Remove source piece from Hash
-    mHash ^= Zobrist::pieceKeys[mSideToMove][pieceType][m.from];
-    // Add destination piece to Hash (if no promotion)
-    // If promotion, we handle it specifically below.
-    if (m.promotion == NOPIECE) {
-        mHash ^= Zobrist::pieceKeys[mSideToMove][pieceType][m.to];
-    }
-
-    if (startBit & pieces[mSideToMove][ROOK]) {
-        pieces[mSideToMove][ROOK] &= ~startBit;
-        pieces[mSideToMove][ROOK] |= endBit; 
-        board[m.from] = NOPIECE;
-        board[m.to] = ROOK;
-        mEnPassentSquare = 0;
-    } 
-    else if (startBit & pieces[mSideToMove][BISHOP]) {
-        pieces[mSideToMove][BISHOP] &= ~startBit;
-        pieces[mSideToMove][BISHOP] |= endBit;
-        board[m.from] = NOPIECE;
-        board[m.to] = BISHOP;
-        mEnPassentSquare = 0;
-    } 
-    else if (startBit & pieces[mSideToMove][QUEEN]) {
-        pieces[mSideToMove][QUEEN] &= ~startBit;
-        pieces[mSideToMove][QUEEN] |= endBit;
-        board[m.from] = NOPIECE;
-        board[m.to] = QUEEN;
-        mEnPassentSquare = 0;
-    } 
-    else if (startBit & pieces[mSideToMove][KNIGHT]) {
-        pieces[mSideToMove][KNIGHT] &= ~startBit;
-        pieces[mSideToMove][KNIGHT] |= endBit;
-        board[m.from] = NOPIECE;
-        board[m.to] = KNIGHT;
-        mEnPassentSquare = 0;
-    } 
-    else if (startBit & pieces[mSideToMove][KING]) {
-        pieces[mSideToMove][KING] &= ~startBit;
-        pieces[mSideToMove][KING] |= endBit;
-        board[m.from] = NOPIECE;
-        board[m.to] = KING;
-        mEnPassentSquare = 0;
-
-        if ((int)m.to - (int)m.from == 2) { 
-            uint64_t rookFrom = (1ULL << (m.to + 1));
-            uint64_t rookTo   = (1ULL << (m.to - 1));
-
-            pieces[mSideToMove][ROOK] &= ~rookFrom;
-            pieces[mSideToMove][ROOK] |= rookTo;
-
-            board[m.to + 1] = NOPIECE;
-            board[m.to - 1] = ROOK;
-
-            mHash ^= Zobrist::pieceKeys[mSideToMove][ROOK][m.to + 1];
-            mHash ^= Zobrist::pieceKeys[mSideToMove][ROOK][m.to - 1];
-        } 
-        else if ((int)m.to - (int)m.from == -2) {
-            uint64_t rookFrom = (1ULL << (m.to - 2));
-            uint64_t rookTo   = (1ULL << (m.to + 1));
-
-            pieces[mSideToMove][ROOK] &= ~rookFrom;
-            pieces[mSideToMove][ROOK] |= rookTo;
-
-            board[m.to - 2] = NOPIECE;
-            board[m.to + 1] = ROOK;
-
-            mHash ^= Zobrist::pieceKeys[mSideToMove][ROOK][m.to - 2];
-            mHash ^= Zobrist::pieceKeys[mSideToMove][ROOK][m.to + 1];
-        }
-    } else {
-        pieces[mSideToMove][PAWN] &= ~startBit;
-        board[m.from] = NOPIECE;
-
-        if (m.promotion == NOPIECE) {
-            pieces[mSideToMove][PAWN] |= endBit;
-            board[m.to] = PAWN;
-        } else {
-            pieces[mSideToMove][m.promotion] |= endBit;
-            board[m.to] = m.promotion;
-            mHash ^= Zobrist::pieceKeys[mSideToMove][m.promotion][m.to];
-        }
-
-        if(endBit == mEnPassentSquare) {
-          Color enemyColor = (mSideToMove == WHITE) ? BLACK : WHITE;
-          int captureOffset = (mSideToMove == WHITE) ? -8 : 8;
-          int captureSq = m.to + captureOffset;
-
-          pieces[enemyColor][PAWN] &= ~(1ULL << captureSq);
-          board[captureSq] = NOPIECE;
-
-          mHash ^= Zobrist::pieceKeys[enemyColor][PAWN][captureSq];
-        }
-
-        if(abs((int)m.to - (int)m.from) == 16) {
-          int eP = (mSideToMove == WHITE) ? (m.from + 8) : (m.from - 8);
-          mEnPassentSquare = (1ULL << eP);
-        } else {
-          mEnPassentSquare = 0;
-        }
-    }
-
-    Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
-    for(int i = 0; i < 6; i++) {
-      if(endBit & pieces[enemy][i]) {
-        pieces[enemy][i] &= ~endBit;
-        state.capturedPiece = i;
-        mHash ^= Zobrist::pieceKeys[enemy][i][m.to];
-        break;
-      }
-    }
-    occupancies[WHITE] = pieces[WHITE][PAWN] | pieces[WHITE][KNIGHT] | pieces[WHITE][BISHOP] | pieces[WHITE][QUEEN] | pieces[WHITE][KING] | pieces[WHITE][ROOK];
-    occupancies[BLACK] = pieces[BLACK][PAWN] | pieces[BLACK][KNIGHT] | pieces[BLACK][BISHOP] | pieces[BLACK][QUEEN] | pieces[BLACK][KING] | pieces[BLACK][ROOK];
-    occupancies[2] = occupancies[WHITE] | occupancies[BLACK];
-
+    // Handle castling
     if (state.movedPiece == KING) {
-        if (mSideToMove == WHITE) mCastleRight &= ~(WHITE_OO | WHITE_OOO); 
-        else                      mCastleRight &= ~(BLACK_OO | BLACK_OOO);
+      int castleDelta = (int)m.to - (int)m.from;
+
+      if (abs(castleDelta) == 2) {  // Kingside
+        int rookIdx = (castleDelta == 2) ? (m.to + 1) : (m.to - 2);
+        int rookDest = (castleDelta == 2) ? (m.to - 1) : (m.to + 1);
+
+        uint64_t rookMask = (1ULL << rookIdx) | (1ULL << rookDest);
+
+        pieces[mSideToMove][ROOK] ^= rookMask;
+        occupancies[mSideToMove] ^= rookMask;
+        occupancies[2] ^= rookMask;
+
+        board[rookIdx] = NOPIECE;
+        board[rookDest] = ROOK;
+
+        mPosScore -= getPieceValue(ROOK, rookIdx, mSideToMove);
+        mPosScore += getPieceValue(ROOK, rookDest, mSideToMove);
+        mHash ^= Zobrist::pieceKeys[mSideToMove][ROOK][rookIdx];
+        mHash ^= Zobrist::pieceKeys[mSideToMove][ROOK][rookDest];
+      }
+      mEnPassentSquare = 0;
     }
+    // Handle pawn moves
+    else if (state.movedPiece == PAWN) {
+      // Handle en passant capture
+      if (toMask == mEnPassentSquare && mEnPassentSquare != 0) {
+        int captureOffset = (mSideToMove == WHITE) ? -8 : 8;
+        int captureSq = m.to + captureOffset;
+        uint64_t captureMask = 1ULL << captureSq;
 
-    if (state.movedPiece == ROOK) {
-        if (m.from == 0)       mCastleRight &= ~WHITE_OOO;
-        else if (m.from == 7)  mCastleRight &= ~WHITE_OO;
-        else if (m.from == 56) mCastleRight &= ~BLACK_OOO;
-        else if (m.from == 63) mCastleRight &= ~BLACK_OO;
+        state.capturedPiece = PAWN;
+        pieces[enemy][PAWN] ^= captureMask;
+        occupancies[enemy] ^= captureMask;
+        occupancies[2] ^= captureMask;
+        board[captureSq] = NOPIECE;
+
+        mPosScore -= getPieceValue(PAWN, captureSq, enemy);
+        mHash ^= Zobrist::pieceKeys[enemy][PAWN][captureSq];
+      }
+
+      // Set new en passant square for double pawn push
+      if (abs((int)m.to - (int)m.from) == 16) {
+        int epSq = (m.from + m.to) / 2;
+        mEnPassentSquare = 1ULL << epSq;
+      } else {
+        mEnPassentSquare = 0;
+      }
+    } else {
+      mEnPassentSquare = 0;
     }
+  }
 
-    if (state.capturedPiece == ROOK) {
-        if (m.to == 0)       mCastleRight &= ~WHITE_OOO;
-        else if (m.to == 7)  mCastleRight &= ~WHITE_OO;
-        else if (m.to == 56) mCastleRight &= ~BLACK_OOO;
-        else if (m.to == 63) mCastleRight &= ~BLACK_OO;
-    }
+  // Update castle rights
+  mCastleRight &= castling_rights[m.from];
+  mCastleRight &= castling_rights[m.to];
 
-    if (mEnPassentSquare) {
-        mHash ^= Zobrist::enPassantKeys[__builtin_ctzll(mEnPassentSquare)];
-    }
-    mHash ^= Zobrist::castleKeys[mCastleRight];
+  // Update hash - add new state contributions
+  if (mEnPassentSquare) {
+    mHash ^= Zobrist::enPassantKeys[__builtin_ctzll(mEnPassentSquare)];
+  }
+  mHash ^= Zobrist::castleKeys[mCastleRight];
 
-    // Switch side
-    mSideToMove = enemy;
+  // Switch side
+  mSideToMove = enemy;
 
-    history.push_back(state);
+  history[gamePly++] = state;
 }
 
 void Position::undoMove(Move m) {
-  StateInfo oldState = history.back();
-  history.pop_back();
+  gamePly--;
+  // Restore state from history
+  const StateInfo& state = history[gamePly];
 
-  mCastleRight = oldState.castle;
-  mEnPassentSquare = oldState.epSquare;
-  mHalfMove = oldState.halfMove;
+  mCastleRight = state.castle;
+  mEnPassentSquare = state.epSquare;
+  mHalfMove = state.halfMove;
+  mHash = state.zobristKey;
+  mPosScore = state.psqtScore;
 
-  mHash = oldState.zobristKey;
-  mPosScore = oldState.psqtScore;
+  // Switch side back
+  mSideToMove = (mSideToMove == WHITE) ? BLACK : WHITE;
+  Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
 
-    mSideToMove = (mSideToMove == WHITE) ? BLACK : WHITE;
+  // Pre-compute masks
+  uint64_t fromMask = 1ULL << m.from;
+  uint64_t toMask = 1ULL << m.to;
+  uint64_t moveMask = fromMask | toMask;
 
-    if (m.promotion != NOPIECE) {
-        pieces[mSideToMove][m.promotion] &= ~(1ULL << m.to);
-        pieces[mSideToMove][PAWN] |= (1ULL << m.from);
-        board[m.to] = NOPIECE;
-        board[m.from] = PAWN;
-    } 
+  // Handle promotion undo
+  if (m.promotion != NOPIECE) {
+    pieces[mSideToMove][m.promotion] ^= toMask;
+    pieces[mSideToMove][PAWN] ^= fromMask;
+    occupancies[mSideToMove] ^= moveMask;
+    occupancies[2] ^= moveMask;
+
+    board[m.to] = NOPIECE;
+    board[m.from] = PAWN;
+  }
+  // Handle normal move undo
+  else {
+    pieces[mSideToMove][state.movedPiece] ^= moveMask;
+    occupancies[mSideToMove] ^= moveMask;
+    occupancies[2] ^= moveMask;
+
+    board[m.to] = NOPIECE;
+    board[m.from] = state.movedPiece;
+
+    // Handle castling undo
+    if (state.movedPiece == KING) {
+      int castleDelta = (int)m.to - (int)m.from;
+
+      if (castleDelta == 2) {  // Kingside
+        uint64_t rookMoveMask = (1ULL << (m.to + 1)) | (1ULL << (m.to - 1));
+        pieces[mSideToMove][ROOK] ^= rookMoveMask;
+        occupancies[mSideToMove] ^= rookMoveMask;
+        occupancies[2] ^= rookMoveMask;
+
+        board[m.to - 1] = NOPIECE;
+        board[m.to + 1] = ROOK;
+      } else if (castleDelta == -2) {  // Queenside
+        uint64_t rookMoveMask = (1ULL << (m.to - 2)) | (1ULL << (m.to + 1));
+        pieces[mSideToMove][ROOK] ^= rookMoveMask;
+        occupancies[mSideToMove] ^= rookMoveMask;
+        occupancies[2] ^= rookMoveMask;
+
+        board[m.to + 1] = NOPIECE;
+        board[m.to - 2] = ROOK;
+      }
+    }
+  }
+
+  // Restore captured piece
+  if (state.capturedPiece != NOPIECE) {
+    // Handle en passant capture undo
+    if (state.movedPiece == PAWN && toMask == state.epSquare) {
+      int captureOffset = (mSideToMove == WHITE) ? -8 : 8;
+      int captureSq = m.to + captureOffset;
+      uint64_t captureMask = 1ULL << captureSq;
+
+      pieces[enemy][PAWN] ^= captureMask;
+      occupancies[enemy] ^= captureMask;
+      occupancies[2] ^= captureMask;
+      board[captureSq] = PAWN;
+    }
+    // Handle normal capture undo
     else {
-        pieces[mSideToMove][oldState.movedPiece] &= ~(1ULL << m.to);
-        pieces[mSideToMove][oldState.movedPiece] |= (1ULL << m.from);
-        board[m.to] = NOPIECE;
-        board[m.from] = oldState.movedPiece;
-
-        if(oldState.movedPiece == KING) {
-          if((int)m.to - (int)m.from == 2) {
-            uint64_t rookFrom = (1ULL << (m.to + 1));
-            uint64_t rookTo = (1ULL << (m.to - 1));
-            pieces[mSideToMove][ROOK] &= ~rookTo;
-            pieces[mSideToMove][ROOK] |= rookFrom;
-            board[m.to - 1] = NOPIECE;
-            board[m.to + 1] = ROOK;
-
-          } else if((int)m.to - (int)m.from == -2) {
-            uint64_t rookFrom = (1ULL << (m.to - 2));
-            uint64_t rookTo = (1ULL << (m.to + 1));
-            pieces[mSideToMove][ROOK] &= ~rookTo;
-            pieces[mSideToMove][ROOK] |= rookFrom;
-            board[m.to + 1] = NOPIECE;
-            board[m.to - 2] = ROOK;
-
-          }
-        }
+      pieces[enemy][state.capturedPiece] ^= toMask;
+      occupancies[enemy] ^= toMask;
+      occupancies[2] ^= toMask;
+      board[m.to] = state.capturedPiece;
     }
-
-    if (oldState.capturedPiece != NOPIECE) {
-        Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
-
-        if(oldState.movedPiece == PAWN && (1ULL << m.to) == oldState.epSquare) {
-          int captureOffset = (mSideToMove == WHITE) ? -8 : 8;
-          pieces[enemy][PAWN] |= (1ULL << (m.to + captureOffset));
-          board[m.to + captureOffset] = PAWN;
-
-        } else {
-          pieces[enemy][oldState.capturedPiece] |= (1ULL << m.to);
-          board[m.to] = oldState.capturedPiece;
-        }
-    }
-
-    occupancies[WHITE] = pieces[WHITE][PAWN] | pieces[WHITE][KNIGHT] |  pieces[WHITE][BISHOP] | pieces[WHITE][QUEEN] | pieces[WHITE][KING] | pieces[WHITE][ROOK];
-
-    occupancies[BLACK] = pieces[BLACK][PAWN] | pieces[BLACK][KNIGHT] |  pieces[BLACK][BISHOP] | pieces[BLACK][QUEEN] | pieces[BLACK][KING] | pieces[BLACK][ROOK];
-
-    occupancies[2] = occupancies[WHITE] | occupancies[BLACK];
-
+  }
 }
 
 void Position::getMoves(Color color, MoveList& moveList) {
@@ -617,25 +644,25 @@ void Position::getMoves(Color color, MoveList& moveList) {
     std::cout << "CRITICAL ERROR: Enemy King missing for color " << enemy << std::endl;
   }
 
-  for(int i = 0; i < 6; i++) {
+  for (int i = 0; i < 6; i++) {
     uint64_t piece = pieces[color][i];
-    while(piece) {
+    while (piece) {
       int sourceSquare = __builtin_ctzll(piece);
       uint64_t validTargets = getPseudoLegalMoves(sourceSquare, i, color);
       validTargets &= ~enemyKing;
 
-      while(validTargets) {
+      while (validTargets) {
         int targetSquare = __builtin_ctzll(validTargets);
         int victim = board[targetSquare];
         int aggressor = i;
         int score = 0;
 
-        if(victim != NOPIECE) {
-          static const int victimScores[] = { 100, 300, 310, 500, 900, 0 };
+        if (victim != NOPIECE) {
+          static const int victimScores[] = {100, 300, 310, 500, 900, 0};
           score = victimScores[victim] - victimScores[aggressor] + 10000;
         }
 
-        if(i == PAWN && (targetSquare/8) == ((color == WHITE) ? 7 : 0)) {
+        if (i == PAWN && (targetSquare / 8) == ((color == WHITE) ? 7 : 0)) {
           moveList.add(Move(sourceSquare, targetSquare, QUEEN), score);
           moveList.add(Move(sourceSquare, targetSquare, KNIGHT), score);
           moveList.add(Move(sourceSquare, targetSquare, BISHOP), score);
@@ -649,107 +676,99 @@ void Position::getMoves(Color color, MoveList& moveList) {
     }
   }
   if (color == WHITE) {
-        if ((mCastleRight & WHITE_OO) && 
-            !(occupancies[2] & ((1ULL << 5) | (1ULL << 6)))) {
-            if (!isSquareAttacked(4, BLACK) && 
-                !isSquareAttacked(5, BLACK) && 
-                !isSquareAttacked(6, BLACK)) {
-                moveList.add(Move(4, 6, NOPIECE), 0); // e1g1
-            }
-        }
-
-        if ((mCastleRight & WHITE_OOO) && 
-            !(occupancies[2] & ((1ULL << 1) | (1ULL << 2) | (1ULL << 3)))) {
-            if (!isSquareAttacked(4, BLACK) && 
-                !isSquareAttacked(3, BLACK) && 
-                !isSquareAttacked(2, BLACK)) {
-                moveList.add(Move(4, 2, NOPIECE), 0); // e1c1
-            }
-        }
-    } 
-    else {
-        if ((mCastleRight & BLACK_OO) && 
-            !(occupancies[2] & ((1ULL << 61) | (1ULL << 62)))) {
-            if (!isSquareAttacked(60, WHITE) && 
-                !isSquareAttacked(61, WHITE) && 
-                !isSquareAttacked(62, WHITE)) {
-                moveList.add(Move(60, 62, NOPIECE), 0); // e8g8
-            }
-        }
-
-        if ((mCastleRight & BLACK_OOO) && 
-            !(occupancies[2] & ((1ULL << 57) | (1ULL << 58) | (1ULL << 59)))) {
-            if (!isSquareAttacked(60, WHITE) && 
-                !isSquareAttacked(59, WHITE) && 
-                !isSquareAttacked(58, WHITE)) {
-                moveList.add(Move(60, 58, NOPIECE), 0); // e8c8
-            }
-        }
+    if ((mCastleRight & WHITE_OO) && !(occupancies[2] & ((1ULL << 5) | (1ULL << 6)))) {
+      if (!isSquareAttacked(4, BLACK) && !isSquareAttacked(5, BLACK) &&
+          !isSquareAttacked(6, BLACK)) {
+        moveList.add(Move(4, 6, NOPIECE), 0);  // e1g1
+      }
     }
+
+    if ((mCastleRight & WHITE_OOO) &&
+        !(occupancies[2] & ((1ULL << 1) | (1ULL << 2) | (1ULL << 3)))) {
+      if (!isSquareAttacked(4, BLACK) && !isSquareAttacked(3, BLACK) &&
+          !isSquareAttacked(2, BLACK)) {
+        moveList.add(Move(4, 2, NOPIECE), 0);  // e1c1
+      }
+    }
+  } else {
+    if ((mCastleRight & BLACK_OO) && !(occupancies[2] & ((1ULL << 61) | (1ULL << 62)))) {
+      if (!isSquareAttacked(60, WHITE) && !isSquareAttacked(61, WHITE) &&
+          !isSquareAttacked(62, WHITE)) {
+        moveList.add(Move(60, 62, NOPIECE), 0);  // e8g8
+      }
+    }
+
+    if ((mCastleRight & BLACK_OOO) &&
+        !(occupancies[2] & ((1ULL << 57) | (1ULL << 58) | (1ULL << 59)))) {
+      if (!isSquareAttacked(60, WHITE) && !isSquareAttacked(59, WHITE) &&
+          !isSquareAttacked(58, WHITE)) {
+        moveList.add(Move(60, 58, NOPIECE), 0);  // e8c8
+      }
+    }
+  }
 }
 
 void Position::printBoard() {
-    std::cout << "         board" << std::endl;
-    std::cout << "  +-----------------+" << std::endl;
-    for (int rank = 7; rank >= 0; rank--) {
-        std::cout << rank + 1 << " | ";
-        for (int file = 0; file < 8; file++) {
-            int square = rank * 8 + file;
-            if ((occupancies[WHITE] >> square) & 1) {
-
-                if(board[square] == PAWN) {
-                  std::cout << "P ";
-                } else if(board[square] == ROOK) {
-                  std::cout << "R ";
-                } else if(board[square] == BISHOP) {
-                  std::cout << "B ";
-                } else if(board[square] == QUEEN) {
-                  std::cout << "Q ";
-                } else if(board[square] == KNIGHT) {
-                  std::cout << "N ";
-                } else if(board[square] == KING) {
-                  std::cout << "K ";
-                }
-            } else if ((occupancies[BLACK] >> square) & 1) {
-
-                if(board[square] == PAWN) {
-                  std::cout << "p ";
-                } else if(board[square] == ROOK) {
-                  std::cout << "r ";
-                } else if(board[square] == BISHOP) {
-                  std::cout << "b ";
-                } else if(board[square] == QUEEN) {
-                  std::cout << "q ";
-                } else if(board[square] == KNIGHT) {
-                  std::cout << "n ";
-                } else if(board[square] == KING) {
-                  std::cout << "k ";
-                }
-            } else {
-                std::cout << ". ";
-            }
+  std::cout << "         board" << std::endl;
+  std::cout << "  +-----------------+" << std::endl;
+  for (int rank = 7; rank >= 0; rank--) {
+    std::cout << rank + 1 << " | ";
+    for (int file = 0; file < 8; file++) {
+      int square = rank * 8 + file;
+      if ((occupancies[WHITE] >> square) & 1) {
+        if (board[square] == PAWN) {
+          std::cout << "P ";
+        } else if (board[square] == ROOK) {
+          std::cout << "R ";
+        } else if (board[square] == BISHOP) {
+          std::cout << "B ";
+        } else if (board[square] == QUEEN) {
+          std::cout << "Q ";
+        } else if (board[square] == KNIGHT) {
+          std::cout << "N ";
+        } else if (board[square] == KING) {
+          std::cout << "K ";
         }
-        std::cout << "|" << std::endl;
+      } else if ((occupancies[BLACK] >> square) & 1) {
+        if (board[square] == PAWN) {
+          std::cout << "p ";
+        } else if (board[square] == ROOK) {
+          std::cout << "r ";
+        } else if (board[square] == BISHOP) {
+          std::cout << "b ";
+        } else if (board[square] == QUEEN) {
+          std::cout << "q ";
+        } else if (board[square] == KNIGHT) {
+          std::cout << "n ";
+        } else if (board[square] == KING) {
+          std::cout << "k ";
+        }
+      } else {
+        std::cout << ". ";
+      }
     }
-    std::cout << "  +-----------------+" << std::endl;
-    std::cout << "    a b c d e f g h" << std::endl;
+    std::cout << "|" << std::endl;
+  }
+  std::cout << "  +-----------------+" << std::endl;
+  std::cout << "    a b c d e f g h" << std::endl;
 }
 
 Position::Position() {
   Zobrist::init();
+  initPST();
+  gamePly = 0;
 
-  for(int c = 0; c < 2; c++) {
-        for(int p = 0; p < 6; p++) {
-            pieces[c][p] = 0ULL;
-        }
+  for (int c = 0; c < 2; c++) {
+    for (int p = 0; p < 6; p++) {
+      pieces[c][p] = 0ULL;
     }
-    occupancies[0] = 0ULL;
-    occupancies[1] = 0ULL;
-    occupancies[2] = 0ULL;
-    mSideToMove = WHITE;
-    mCastleRight = 0;
-    mEnPassentSquare = 0;
-    mHash = 0ULL;
+  }
+  occupancies[0] = 0ULL;
+  occupancies[1] = 0ULL;
+  occupancies[2] = 0ULL;
+  mSideToMove = WHITE;
+  mCastleRight = 0;
+  mEnPassentSquare = 0;
+  mHash = 0ULL;
 }
-Position::~Position() {
-}
+Position::~Position() {}
