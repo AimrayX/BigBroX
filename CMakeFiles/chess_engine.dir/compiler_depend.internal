@@ -414,22 +414,12 @@ CMakeFiles/chess_engine.dir/engine.cpp.o
  /usr/include/bits/errno.h
  /usr/include/bits/floatn-common.h
  /usr/include/bits/floatn.h
- /usr/include/bits/flt-eval-method.h
- /usr/include/bits/fp-fast.h
- /usr/include/bits/fp-logb.h
  /usr/include/bits/getopt_core.h
  /usr/include/bits/getopt_posix.h
- /usr/include/bits/iscanonical.h
  /usr/include/bits/libc-header-start.h
- /usr/include/bits/libm-simd-decl-stubs.h
  /usr/include/bits/local_lim.h
  /usr/include/bits/locale.h
  /usr/include/bits/long-double.h
- /usr/include/bits/math-vector.h
- /usr/include/bits/mathcalls-helper-functions.h
- /usr/include/bits/mathcalls-macros.h
- /usr/include/bits/mathcalls-narrow.h
- /usr/include/bits/mathcalls.h
  /usr/include/bits/posix1_lim.h
  /usr/include/bits/posix2_lim.h
  /usr/include/bits/posix_opt.h
@@ -551,8 +541,6 @@ CMakeFiles/chess_engine.dir/engine.cpp.o
  /usr/include/c++/15/bits/predefined_ops.h
  /usr/include/c++/15/bits/ptr_traits.h
  /usr/include/c++/15/bits/quoted_string.h
- /usr/include/c++/15/bits/random.h
- /usr/include/c++/15/bits/random.tcc
  /usr/include/c++/15/bits/range_access.h
  /usr/include/c++/15/bits/ranges_algobase.h
  /usr/include/c++/15/bits/ranges_base.h
@@ -563,7 +551,6 @@ CMakeFiles/chess_engine.dir/engine.cpp.o
  /usr/include/c++/15/bits/semaphore_base.h
  /usr/include/c++/15/bits/shared_ptr.h
  /usr/include/c++/15/bits/shared_ptr_base.h
- /usr/include/c++/15/bits/specfun.h
  /usr/include/c++/15/bits/sstream.tcc
  /usr/include/c++/15/bits/std_abs.h
  /usr/include/c++/15/bits/std_mutex.h
@@ -577,7 +564,6 @@ CMakeFiles/chess_engine.dir/engine.cpp.o
  /usr/include/c++/15/bits/stl_iterator.h
  /usr/include/c++/15/bits/stl_iterator_base_funcs.h
  /usr/include/c++/15/bits/stl_iterator_base_types.h
- /usr/include/c++/15/bits/stl_numeric.h
  /usr/include/c++/15/bits/stl_pair.h
  /usr/include/c++/15/bits/stl_tempbuf.h
  /usr/include/c++/15/bits/stl_uninitialized.h
@@ -602,7 +588,6 @@ CMakeFiles/chess_engine.dir/engine.cpp.o
  /usr/include/c++/15/chrono
  /usr/include/c++/15/climits
  /usr/include/c++/15/clocale
- /usr/include/c++/15/cmath
  /usr/include/c++/15/compare
  /usr/include/c++/15/concepts
  /usr/include/c++/15/cstddef
@@ -633,36 +618,19 @@ CMakeFiles/chess_engine.dir/engine.cpp.o
  /usr/include/c++/15/locale
  /usr/include/c++/15/new
  /usr/include/c++/15/numbers
- /usr/include/c++/15/numeric
  /usr/include/c++/15/optional
  /usr/include/c++/15/ostream
- /usr/include/c++/15/pstl/execution_defs.h
- /usr/include/c++/15/pstl/glue_numeric_defs.h
  /usr/include/c++/15/pstl/pstl_config.h
- /usr/include/c++/15/random
  /usr/include/c++/15/ratio
  /usr/include/c++/15/semaphore
  /usr/include/c++/15/span
  /usr/include/c++/15/sstream
  /usr/include/c++/15/stdexcept
- /usr/include/c++/15/stdlib.h
  /usr/include/c++/15/stop_token
  /usr/include/c++/15/streambuf
  /usr/include/c++/15/string
  /usr/include/c++/15/string_view
  /usr/include/c++/15/system_error
- /usr/include/c++/15/tr1/bessel_function.tcc
- /usr/include/c++/15/tr1/beta_function.tcc
- /usr/include/c++/15/tr1/ell_integral.tcc
- /usr/include/c++/15/tr1/exp_integral.tcc
- /usr/include/c++/15/tr1/gamma.tcc
- /usr/include/c++/15/tr1/hypergeometric.tcc
- /usr/include/c++/15/tr1/legendre_function.tcc
- /usr/include/c++/15/tr1/modified_bessel_func.tcc
- /usr/include/c++/15/tr1/poly_hermite.tcc
- /usr/include/c++/15/tr1/poly_laguerre.tcc
- /usr/include/c++/15/tr1/riemann_zeta.tcc
- /usr/include/c++/15/tr1/special_function_util.h
  /usr/include/c++/15/tuple
  /usr/include/c++/15/type_traits
  /usr/include/c++/15/typeinfo
@@ -678,7 +646,6 @@ CMakeFiles/chess_engine.dir/engine.cpp.o
  /usr/include/c++/15/x86_64-suse-linux/bits/gthr-default.h
  /usr/include/c++/15/x86_64-suse-linux/bits/gthr.h
  /usr/include/c++/15/x86_64-suse-linux/bits/messages_members.h
- /usr/include/c++/15/x86_64-suse-linux/bits/opt_random.h
  /usr/include/c++/15/x86_64-suse-linux/bits/os_defines.h
  /usr/include/c++/15/x86_64-suse-linux/bits/time_members.h
  /usr/include/ctype.h
@@ -698,7 +665,6 @@ CMakeFiles/chess_engine.dir/engine.cpp.o
  /usr/include/linux/stddef.h
  /usr/include/linux/types.h
  /usr/include/locale.h
- /usr/include/math.h
  /usr/include/pthread.h
  /usr/include/sched.h
  /usr/include/semaphore.h
@@ -717,17 +683,11 @@ CMakeFiles/chess_engine.dir/engine.cpp.o
  /usr/include/unistd.h
  /usr/include/wchar.h
  /usr/include/wctype.h
- /usr/lib64/gcc/x86_64-suse-linux/15/include/emmintrin.h
  /usr/lib64/gcc/x86_64-suse-linux/15/include/limits.h
- /usr/lib64/gcc/x86_64-suse-linux/15/include/mm_malloc.h
- /usr/lib64/gcc/x86_64-suse-linux/15/include/mmintrin.h
- /usr/lib64/gcc/x86_64-suse-linux/15/include/mwaitintrin.h
- /usr/lib64/gcc/x86_64-suse-linux/15/include/pmmintrin.h
  /usr/lib64/gcc/x86_64-suse-linux/15/include/stdarg.h
  /usr/lib64/gcc/x86_64-suse-linux/15/include/stddef.h
  /usr/lib64/gcc/x86_64-suse-linux/15/include/stdint.h
  /usr/lib64/gcc/x86_64-suse-linux/15/include/syslimits.h
- /usr/lib64/gcc/x86_64-suse-linux/15/include/xmmintrin.h
 
 CMakeFiles/chess_engine.dir/game.cpp.o
  /home/aimray/Projects/BigBroX/game.cpp
@@ -1941,12 +1901,12 @@ chess_engine
  /usr/lib64/gcc/x86_64-suse-linux/15/libgcc_s.so.1
  /usr/lib64/gcc/x86_64-suse-linux/15/libstdc++.so
  /usr/lib64/libc_nonshared.a
- /home/aimray/Projects/BigBroX/build/CMakeFiles/chess_engine.dir/UCIHandler.cpp.o
- /home/aimray/Projects/BigBroX/build/CMakeFiles/chess_engine.dir/attack.cpp.o
- /home/aimray/Projects/BigBroX/build/CMakeFiles/chess_engine.dir/engine.cpp.o
- /home/aimray/Projects/BigBroX/build/CMakeFiles/chess_engine.dir/game.cpp.o
- /home/aimray/Projects/BigBroX/build/CMakeFiles/chess_engine.dir/main.cpp.o
- /home/aimray/Projects/BigBroX/build/CMakeFiles/chess_engine.dir/position.cpp.o
- /home/aimray/Projects/BigBroX/build/CMakeFiles/chess_engine.dir/transposition.cpp.o
- /home/aimray/Projects/BigBroX/build/CMakeFiles/chess_engine.dir/utils.cpp.o
+ /home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir/UCIHandler.cpp.o
+ /home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir/attack.cpp.o
+ /home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir/engine.cpp.o
+ /home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir/game.cpp.o
+ /home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir/main.cpp.o
+ /home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir/position.cpp.o
+ /home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir/transposition.cpp.o
+ /home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir/utils.cpp.o
 

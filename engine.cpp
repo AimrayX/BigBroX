@@ -8,23 +8,13 @@
 
 const int INF = 1000000;
 
-// Add this to engine.cpp
 
 std::vector<Move> Engine::getPV(Position& pos, int depth) {
     std::vector<Move> pv;
-    
-    // Create a copy of the hash/state to check for loops (optional but safe)
-    // For simplicity, we just use a counter limit
     int ply = 0;
-    
-    // We will make moves on the board to follow the path, 
-    // then undo them all at the end to restore the board state.
     while (ply < depth) {
         Move m = tt.probeMove(pos.getHash());
-        
         if (m.from == 0 && m.to == 0) break; // No move in TT
-        
-        // Verify legality! (Important for hash collisions)
         MoveList moves;
         pos.getMoves(pos.mSideToMove, moves);
         bool legal = false;
@@ -34,19 +24,14 @@ std::vector<Move> Engine::getPV(Position& pos, int depth) {
                 break;
             }
         }
-        
         if (!legal) break;
-        
         pv.push_back(m);
         pos.doMove(m);
         ply++;
     }
-    
-    // IMPORTANT: Restore the board position!
     for (int i = pv.size() - 1; i >= 0; i--) {
         pos.undoMove(pv[i]);
     }
-    
     return pv;
 }
 
@@ -197,9 +182,15 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
   int ply = mCurrentDepth -depth;
   pvLength[ply] = ply;
 
+  if(ply > 0) {
+    if(pos.isRepetition() || pos.mHalfMove >= 100) {
+      return 0;
+    }
+  }
+
   // --- TT PROBE ---
     int ttScore;
-    Move ttMove = Move();
+    Move ttMove = Move::null();
     // Try to retrieve a cutoff score
     if (tt.probe(pos.getHash(), depth, ply, alpha, beta, ttScore, ttMove)) {
         // If we get a valid cutoff (exact, beta, or alpha), we can return immediately!
@@ -228,7 +219,7 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
   }
 
   int bestScore = -INF;
-  Move bestMove = Move();
+  Move bestMove = Move::null();
   int originalAlpha = alpha;
   int movesSearched = 0;
 
@@ -324,7 +315,7 @@ Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
     mStop = false;
     nodes = 0;
 
-    mLastBestMove = Move();
+    mLastBestMove = Move::null();
     mCurrentEval = 0;
     mCurrentDepth = 1;
  
@@ -337,8 +328,8 @@ Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
     }
 
     for(int i=0; i<MAX_PLY; i++) {
-      killerMoves[i][0] = Move();
-      killerMoves[i][1] = Move();
+      killerMoves[i][0] = Move::null();
+      killerMoves[i][1] = Move::null();
     }
 
     for(int depth = 1; depth <= mDepth; depth++) {
@@ -401,62 +392,7 @@ Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
 }
 
 int Engine::evaluate(Position& pos) {
-    int score = 0;
-
-    for (int p = 0; p < 6; p++) {
-        uint64_t bitboard = pos.pieces[WHITE][p]; 
-
-        while (bitboard) {
-            int square = __builtin_ctzll(bitboard);
-
-            score += pieceValues[p];
-
-            score += PST[p][square]; 
-
-          bitboard &= (bitboard - 1);
-        }
-    }
-
-    for (int p = 0; p < 6; p++) {
-        uint64_t bitboard = pos.pieces[BLACK][p]; 
-
-        while (bitboard) {
-            int square = __builtin_ctzll(bitboard);
-
-            score -= pieceValues[p];
-
-            score -= PST[p][square ^ 56]; 
-
-          bitboard &= (bitboard - 1);
-        }
-    }
-/*
-    const int DOUBLED_PENALTY = 20;
-    uint64_t fileMask = 0x0101010101010101ULL;
-
-    for (int file = 0; file < 8; file++) {
-        // Count White pawns on this file
-        uint64_t whitePawnsOnFile = pos.pieces[WHITE][PAWN] & fileMask;
-        int whiteCount = __builtin_popcountll(whitePawnsOnFile);
-
-        // Count Black pawns on this file
-        uint64_t blackPawnsOnFile = pos.pieces[BLACK][PAWN] & fileMask;
-        int blackCount = __builtin_popcountll(blackPawnsOnFile);
-
-        // Apply Penalty if more than 1 pawn exists on the file
-        if (whiteCount > 1) {
-            score -= (whiteCount - 1) * DOUBLED_PENALTY;
-        }
-
-        if (blackCount > 1) {
-            score += (blackCount - 1) * DOUBLED_PENALTY;
-        }
-
-        // Move mask to the next file
-        fileMask <<= 1;
-    }
-*/
-    return (pos.mSideToMove == WHITE) ? score : -score;
+    return (pos.mSideToMove == WHITE) ? pos.mPosScore : -pos.mPosScore;
 }
 
 void Engine::setDepth(int depth) {
@@ -477,7 +413,7 @@ Engine::Engine() : tt(64) {
   for(int i = 0; i < MAX_PLY; i++) {
     pvLength[i] = 0;
     for(int j = 0; j < MAX_PLY; j++) {
-      pvTable[i][j] = Move();
+      pvTable[i][j] = Move::null();
     }
   }
 }

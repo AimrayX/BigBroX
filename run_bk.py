@@ -3,7 +3,7 @@ import chess.engine
 
 # --- CONFIGURATION ---
 # Replace this with the actual name of your engine executable
-engine_path = "./build/chess_engine"  
+engine_path = "./chess_engine"  
 epd_file = "bk_test.epd"
 time_per_move = 2.0  # Seconds per position (Standard BK is often 15s or 30s)
 # ---------------------

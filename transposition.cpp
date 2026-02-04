@@ -87,5 +87,5 @@ Move TranspositionTable::probeMove(uint64_t key) {
     if (table[index].key == key) {
         return table[index].move;
     }
-    return Move(); // Return empty move if not found
+    return Move::null(); // Return empty move if not found
 }

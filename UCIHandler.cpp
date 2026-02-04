@@ -172,11 +172,16 @@ int UCIHandler::loop() {
                 movetime = std::stoi(token);
               } else if(token == "infinite") {
                 movetime = 100000;
+              } else if(token == "depth") {
+                ss >> token;
+                game.engine.setDepth(std::stoi(token));
               }
+
             }
             int allocatedTime = movetime;
             if(!movetime) allocatedTime = (game.position.mSideToMove == WHITE) ? ((wtime / 30) + winc) : ((btime / 30) + binc);
-            allocatedTime = std::max(10, allocatedTime -50);
+            if(allocatedTime) allocatedTime = std::max(10, allocatedTime -50);
+            else allocatedTime = 2000000000;
             //std::cout << "allocated Time: " << allocatedTime << std::endl;
             t1 = std::jthread([this, allocatedTime](std::stop_token st) {game.engine.search(game.position, allocatedTime, st);});
             break;

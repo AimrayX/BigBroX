@@ -39,8 +39,31 @@ namespace Zobrist {
     }
 }
 
+bool Position::isRepetition() {
+    int n = history.size();
+
+    for (int i = n - 2; i >= 0 && i >= n - mHalfMove; i -= 2) {
+        if (history[i].zobristKey == mHash) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+int Position::getPieceValue(int piece, int square, Color color) {
+    int val = pieceValues[piece];
+    if (color == WHITE) {
+        return val + PST[piece][square];
+    } else {
+        // Mirror square for Black and negate value
+        return -(val + PST[piece][square ^ 56]);
+    }
+}
+
 int Position::setStartingPosition(std::string startingPosition) {
     // Clear existing state first
+    mPosScore = 0;
 
     history.clear();
 
@@ -136,12 +159,14 @@ int Position::setStartingPosition(std::string startingPosition) {
         uint64_t w = pieces[WHITE][p];
         while (w) {
             int sq = __builtin_ctzll(w);
+            mPosScore += getPieceValue(p, sq, WHITE);
             mHash ^= Zobrist::pieceKeys[WHITE][p][sq];
             w &= (w - 1);
         }
         uint64_t b = pieces[BLACK][p];
         while (b) {
             int sq = __builtin_ctzll(b);
+            mPosScore += getPieceValue(p, sq, BLACK);
             mHash ^= Zobrist::pieceKeys[BLACK][p][sq];
             b &= (b - 1);
         }
@@ -305,6 +330,7 @@ void Position::doMove(Move m) {
     state.capturedPiece = NOPIECE;
     state.movedPiece = NOPIECE;
     state.zobristKey = mHash;
+    state.psqtScore = mPosScore;
 
     if (mEnPassentSquare) {
         mHash ^= Zobrist::enPassantKeys[__builtin_ctzll(mEnPassentSquare)];
@@ -324,6 +350,53 @@ void Position::doMove(Move m) {
     else if (startBit & pieces[mSideToMove][QUEEN]) pieceType = QUEEN;
     else if (startBit & pieces[mSideToMove][KING]) pieceType = KING;
     state.movedPiece = pieceType;
+
+    // =============================================================
+    // === INSERT THIS BLOCK FOR INCREMENTAL SCORE UPDATE START ===
+    // =============================================================
+    state.psqtScore = mPosScore; // Save old score to history first!
+
+    // 1. Remove the moving piece from source
+    mPosScore -= getPieceValue(pieceType, m.from, mSideToMove);
+
+    // 2. Add the piece to the destination (handle promotion)
+    if (m.promotion != NOPIECE) {
+        mPosScore += getPieceValue(m.promotion, m.to, mSideToMove);
+    } else {
+        mPosScore += getPieceValue(pieceType, m.to, mSideToMove);
+    }
+
+    // 3. Handle Standard Capture
+    int captured = board[m.to];
+    if (captured != NOPIECE) {
+        Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
+        mPosScore -= getPieceValue(captured, m.to, enemy);
+    }
+
+    // 4. Handle En Passant Capture (victim is not at m.to)
+    if (pieceType == PAWN && (1ULL << m.to) == mEnPassentSquare) {
+        Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
+        int captureSq = (mSideToMove == WHITE) ? (m.to - 8) : (m.to + 8);
+        mPosScore -= getPieceValue(PAWN, captureSq, enemy);
+    }
+
+    // 5. Handle Castling (Update Rook position)
+    if (pieceType == KING) {
+        // King-side Castling
+        if ((int)m.to - (int)m.from == 2) {
+            int rookFrom = m.to + 1; // h1 or h8
+            int rookTo   = m.to - 1; // f1 or f8
+            mPosScore -= getPieceValue(ROOK, rookFrom, mSideToMove);
+            mPosScore += getPieceValue(ROOK, rookTo, mSideToMove);
+        } 
+        // Queen-side Castling
+        else if ((int)m.to - (int)m.from == -2) {
+            int rookFrom = m.to - 2; // a1 or a8
+            int rookTo   = m.to + 1; // d1 or d8
+            mPosScore -= getPieceValue(ROOK, rookFrom, mSideToMove);
+            mPosScore += getPieceValue(ROOK, rookTo, mSideToMove);
+        }
+    }
 
     // Remove source piece from Hash
     mHash ^= Zobrist::pieceKeys[mSideToMove][pieceType][m.from];
@@ -478,6 +551,7 @@ void Position::undoMove(Move m) {
   mHalfMove = oldState.halfMove;
 
   mHash = oldState.zobristKey;
+  mPosScore = oldState.psqtScore;
 
     mSideToMove = (mSideToMove == WHITE) ? BLACK : WHITE;
 
