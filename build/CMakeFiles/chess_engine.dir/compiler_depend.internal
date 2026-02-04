@@ -1901,12 +1901,12 @@ chess_engine
  /usr/lib64/gcc/x86_64-suse-linux/15/libgcc_s.so.1
  /usr/lib64/gcc/x86_64-suse-linux/15/libstdc++.so
  /usr/lib64/libc_nonshared.a
- /home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir/UCIHandler.cpp.o
- /home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir/attack.cpp.o
- /home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir/engine.cpp.o
- /home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir/game.cpp.o
- /home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir/main.cpp.o
- /home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir/position.cpp.o
- /home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir/transposition.cpp.o
- /home/aimray/Projects/BigBroX/CMakeFiles/chess_engine.dir/utils.cpp.o
+ /home/aimray/Projects/BigBroX/build/CMakeFiles/chess_engine.dir/UCIHandler.cpp.o
+ /home/aimray/Projects/BigBroX/build/CMakeFiles/chess_engine.dir/attack.cpp.o
+ /home/aimray/Projects/BigBroX/build/CMakeFiles/chess_engine.dir/engine.cpp.o
+ /home/aimray/Projects/BigBroX/build/CMakeFiles/chess_engine.dir/game.cpp.o
+ /home/aimray/Projects/BigBroX/build/CMakeFiles/chess_engine.dir/main.cpp.o
+ /home/aimray/Projects/BigBroX/build/CMakeFiles/chess_engine.dir/position.cpp.o
+ /home/aimray/Projects/BigBroX/build/CMakeFiles/chess_engine.dir/transposition.cpp.o
+ /home/aimray/Projects/BigBroX/build/CMakeFiles/chess_engine.dir/utils.cpp.o
 

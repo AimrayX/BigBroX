@@ -7,9 +7,9 @@ set(CMAKE_DEPENDS_GENERATOR "Unix Makefiles")
 # The top level Makefile was generated from the following files:
 set(CMAKE_MAKEFILE_DEPENDS
   "CMakeCache.txt"
+  "/home/aimray/Projects/BigBroX/CMakeLists.txt"
   "CMakeFiles/4.1.3/CMakeCXXCompiler.cmake"
   "CMakeFiles/4.1.3/CMakeSystem.cmake"
-  "CMakeLists.txt"
   "/usr/share/cmake/Modules/CMakeCXXCompiler.cmake.in"
   "/usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp"
   "/usr/share/cmake/Modules/CMakeCXXInformation.cmake"

@@ -8,6 +8,188 @@
 
 const int INF = 1000000;
 
+// Add to top of engine.cpp
+const uint64_t FILE_A = 0x0101010101010101ULL;
+const uint64_t FILE_H = 0x8080808080808080ULL;
+
+// Precompute masks for passed pawn checks
+uint64_t PASSED_MASK[2][64];  // [Color][Square]
+uint64_t ISOLATED_MASK[64];   // [File]
+
+void initEvalMasks() {
+  for (int sq = 0; sq < 64; sq++) {
+    int file = sq % 8;
+    int rank = sq / 8;
+
+    // ISOLATED MASK: The files to the left and right
+    ISOLATED_MASK[file] = 0ULL;
+    if (file > 0) ISOLATED_MASK[file] |= (FILE_A << (file - 1));
+    if (file < 7) ISOLATED_MASK[file] |= (FILE_A << (file + 1));
+
+    // PASSED MASK: All squares in front of the pawn on adjacent files + own file
+    // WHITE
+    PASSED_MASK[WHITE][sq] = 0ULL;
+    uint64_t forward = 0ULL;
+    for (int r = rank + 1; r < 8; r++) forward |= (1ULL << (r * 8 + file));
+
+    PASSED_MASK[WHITE][sq] |= forward;
+    if (file > 0) PASSED_MASK[WHITE][sq] |= (forward >> 1);
+    if (file < 7) PASSED_MASK[WHITE][sq] |= (forward << 1);
+
+    // BLACK (Mirror)
+    PASSED_MASK[BLACK][sq] = 0ULL;
+    forward = 0ULL;
+    for (int r = rank - 1; r >= 0; r--) forward |= (1ULL << (r * 8 + file));
+
+    PASSED_MASK[BLACK][sq] |= forward;
+    if (file > 0) PASSED_MASK[BLACK][sq] |= (forward >> 1);
+    if (file < 7) PASSED_MASK[BLACK][sq] |= (forward << 1);
+  }
+}
+
+// Tuning values (in centipawns)
+const int DOUBLED_PENALTY = 15;
+const int ISOLATED_PENALTY = 20;
+const int PASSED_BONUS[8] = {0, 10, 30, 50, 75, 100, 150, 200};  // Bonus increases by rank
+
+int evalPawns(const Position& pos, Color side) {
+  int score = 0;
+  uint64_t myPawns = pos.pieces[side][PAWN];
+  uint64_t enemyPawns = pos.pieces[side ^ 1][PAWN];
+
+  uint64_t tempPawns = myPawns;
+  while (tempPawns) {
+    int sq = __builtin_ctzll(tempPawns);
+    int file = sq % 8;
+    int rank = sq / 8;
+    int relativeRank = (side == WHITE) ? rank : (7 - rank);
+
+    // 1. PASSED PAWN (No enemy pawns in front or adjacent files)
+    if (!(PASSED_MASK[side][sq] & enemyPawns)) {
+      score += PASSED_BONUS[relativeRank];
+    }
+
+    // 2. ISOLATED PAWN (No friendly pawns on adjacent files)
+    if (!(ISOLATED_MASK[file] & myPawns)) {
+      score -= ISOLATED_PENALTY;
+    }
+
+    // 3. DOUBLED PAWN (Another friendly pawn on the same file)
+    // We mask the file and check if popcount > 1
+    if (__builtin_popcountll(myPawns & (FILE_A << file)) > 1) {
+      // We apply penalty once per pawn, effectively penalizing the pair
+      score -= DOUBLED_PENALTY;
+    }
+
+    tempPawns &= (tempPawns - 1);
+  }
+  return score;
+}
+
+// King Safety Penalties (in centipawns)
+const int KING_SHIELD_PENALTY = 20;  // Per missing shield pawn
+
+const uint64_t KING_SIDE_MASK_W = (1ULL << 5) | (1ULL << 6) | (1ULL << 7);      // f1, g1, h1
+const uint64_t KING_SIDE_MASK_B = (1ULL << 61) | (1ULL << 62) | (1ULL << 63);   // f8, g8, h8
+const uint64_t QUEEN_SIDE_MASK_W = (1ULL << 0) | (1ULL << 1) | (1ULL << 2);     // a1, b1, c1
+const uint64_t QUEEN_SIDE_MASK_B = (1ULL << 56) | (1ULL << 57) | (1ULL << 58);  // a8, b8, c8
+
+int evalKingSafety(const Position& pos, Color side) {
+  // 1. Fast Exit: If King is not on back rank, skip safety check
+  // (This saves time in endgames/middle-of-board chaos)
+  uint64_t kingBB = pos.pieces[side][KING];
+  if (side == WHITE) {
+    if (!(kingBB & 0xFFULL)) return 0;  // King not on rank 1
+  } else {
+    if (!(kingBB & 0xFF00000000000000ULL)) return 0;  // King not on rank 8
+  }
+
+  int score = 0;
+  int kingSq = __builtin_ctzll(kingBB);
+  int file = kingSq % 8;
+  uint64_t pawns = pos.pieces[side][PAWN];
+
+  // 2. Bitwise Shield Check
+  if (file > 4) {  // Kingside
+    uint64_t shieldMask = (side == WHITE) ? (KING_SIDE_MASK_W << 8) : (KING_SIDE_MASK_B >> 8);
+
+    // We want pawns to be present in the shieldMask
+    // XOR gives us the bits where pawns are MISSING
+    uint64_t missing = (shieldMask & ~pawns);
+
+    // Count missing pawns instantly
+    int missingCount = __builtin_popcountll(missing);
+    score -= (missingCount * KING_SHIELD_PENALTY);
+
+  } else if (file < 3) {  // Queenside
+    uint64_t shieldMask = (side == WHITE) ? (QUEEN_SIDE_MASK_W << 8) : (QUEEN_SIDE_MASK_B >> 8);
+    uint64_t missing = (shieldMask & ~pawns);
+    int missingCount = __builtin_popcountll(missing);
+    score -= (missingCount * KING_SHIELD_PENALTY);
+  }
+
+  // (Optional: You can keep the Open File penalty logic here if you want,
+  // but usually the shield check covers 90% of cases).
+
+  return score;
+}
+
+// Piece Evaluation Bonuses (in centipawns)
+const int BISHOP_PAIR_BONUS = 30;
+const int ROOK_OPEN_FILE_BONUS = 35;
+const int ROOK_SEMI_OPEN_FILE_BONUS = 15;
+const int ROOK_ON_7TH_BONUS = 20;
+
+int evalPieces(const Position& pos, Color side) {
+  int score = 0;
+
+  // --- BISHOPS ---
+  uint64_t bishops = pos.pieces[side][BISHOP];
+  // Check for Bishop Pair (more than 1 bishop)
+  if (__builtin_popcountll(bishops) >= 2) {
+    score += BISHOP_PAIR_BONUS;
+  }
+
+  // --- ROOKS ---
+  uint64_t rooks = pos.pieces[side][ROOK];
+  uint64_t myPawns = pos.pieces[side][PAWN];
+  uint64_t enemyPawns = pos.pieces[side ^ 1][PAWN];
+
+  while (rooks) {
+    int sq = __builtin_ctzll(rooks);
+    int file = sq % 8;
+    int rank = sq / 8;
+
+    // 1. Open/Semi-Open Files
+    uint64_t fileMask = FILE_A << file;
+    bool myPawnOnFile = (myPawns & fileMask) != 0;
+    bool enemyPawnOnFile = (enemyPawns & fileMask) != 0;
+
+    if (!myPawnOnFile) {
+      if (!enemyPawnOnFile) {
+        score += ROOK_OPEN_FILE_BONUS;  // Fully open
+      } else {
+        score += ROOK_SEMI_OPEN_FILE_BONUS;  // Semi-open (attack enemy pawn)
+      }
+    }
+
+    // 2. Rook on 7th Rank (Rank 1 for Black, Rank 6 for White 0-indexed)
+    int relativeRank = (side == WHITE) ? rank : (7 - rank);
+    if (relativeRank == 6) {
+      // Bonus only applies if the opponent king is on the back rank
+      // (Otherwise it's just a random rook push)
+      int enemyKingRank = __builtin_ctzll(pos.pieces[side ^ 1][KING]) / 8;
+      if ((side == WHITE && enemyKingRank == 7) || (side == BLACK && enemyKingRank == 0)) {
+        score += ROOK_ON_7TH_BONUS;
+      }
+    }
+
+    rooks &= (rooks - 1);
+  }
+
+  return score;
+}
+
 std::vector<Move> Engine::getPV(Position& pos, int depth) {
   std::vector<Move> pv;
   int ply = 0;
@@ -400,7 +582,17 @@ Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
 }
 
 int Engine::evaluate(Position& pos) {
-  return (pos.mSideToMove == WHITE) ? pos.mPosScore : -pos.mPosScore;
+  // 1. Material + PST
+  int score = pos.mPosScore;
+
+  // 2. Pawns & Safety
+  score += (evalPawns(pos, WHITE) - evalPawns(pos, BLACK));
+  score += (evalKingSafety(pos, WHITE) - evalKingSafety(pos, BLACK));
+
+  // 3. Piece Strategy (NEW)
+  score += (evalPieces(pos, WHITE) - evalPieces(pos, BLACK));
+
+  return (pos.mSideToMove == WHITE) ? score : -score;
 }
 
 void Engine::setDepth(int depth) { mDepth = depth; }
