@@ -44,6 +44,7 @@ set(SOURCES
     utils.cpp
     UCIHandler.cpp
     game.cpp
+    magicBitboards.cpp
 )
 
 add_executable(chess_engine ${SOURCES})

@@ -12,6 +12,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/aimray/Projects/BigBroX/attack.cpp" "CMakeFiles/chess_engine.dir/attack.cpp.o" "gcc" "CMakeFiles/chess_engine.dir/attack.cpp.o.d"
   "/home/aimray/Projects/BigBroX/engine.cpp" "CMakeFiles/chess_engine.dir/engine.cpp.o" "gcc" "CMakeFiles/chess_engine.dir/engine.cpp.o.d"
   "/home/aimray/Projects/BigBroX/game.cpp" "CMakeFiles/chess_engine.dir/game.cpp.o" "gcc" "CMakeFiles/chess_engine.dir/game.cpp.o.d"
+  "/home/aimray/Projects/BigBroX/magicBitboards.cpp" "CMakeFiles/chess_engine.dir/magicBitboards.cpp.o" "gcc" "CMakeFiles/chess_engine.dir/magicBitboards.cpp.o.d"
   "/home/aimray/Projects/BigBroX/main.cpp" "CMakeFiles/chess_engine.dir/main.cpp.o" "gcc" "CMakeFiles/chess_engine.dir/main.cpp.o.d"
   "/home/aimray/Projects/BigBroX/position.cpp" "CMakeFiles/chess_engine.dir/position.cpp.o" "gcc" "CMakeFiles/chess_engine.dir/position.cpp.o.d"
   "/home/aimray/Projects/BigBroX/transposition.cpp" "CMakeFiles/chess_engine.dir/transposition.cpp.o" "gcc" "CMakeFiles/chess_engine.dir/transposition.cpp.o.d"

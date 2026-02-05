@@ -8,6 +8,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/chess_engine.dir/engine.cpp.o.d"
   "CMakeFiles/chess_engine.dir/game.cpp.o"
   "CMakeFiles/chess_engine.dir/game.cpp.o.d"
+  "CMakeFiles/chess_engine.dir/magicBitboards.cpp.o"
+  "CMakeFiles/chess_engine.dir/magicBitboards.cpp.o.d"
   "CMakeFiles/chess_engine.dir/main.cpp.o"
   "CMakeFiles/chess_engine.dir/main.cpp.o.d"
   "CMakeFiles/chess_engine.dir/position.cpp.o"
