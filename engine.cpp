@@ -360,6 +360,7 @@ int Engine::quiescence(Position& pos, int alpha, int beta, std::stop_token& stok
   MoveList moveList;
   pos.getCaptures(pos.mSideToMove, moveList);
 
+  const int DELTA_MARGIN = 200;
   // 1. Score the moves
   for (int i = 0; i < moveList.count; i++) {
     moveList.moves[i].score = scoreMove(moveList.moves[i], pos, -1);
@@ -371,12 +372,31 @@ int Engine::quiescence(Position& pos, int alpha, int beta, std::stop_token& stok
     pickMove(moveList, i);
     Move move = moveList.moves[i];
 
-    // --- OPTIMIZATION & FIX ---
-    // Quiet moves have a score of 0.
-    // Captures and Promotions have scores > 1000.
-    // Since the list is sorted, as soon as we hit a 0, we are done!
-    if (move.score < 1000) {
-      break;
+    if (move.score < 1000) break;  // Optimization: Stop searching bad captures
+
+    // 1. Determine value of the piece being captured
+    int capturedPiece = pos.board[move.to];
+    int capturedValue = 0;
+
+    if (capturedPiece != NOPIECE) {
+      // P=100, N=300, B=320, R=500, Q=900
+      static const int values[] = {100, 300, 320, 500, 900, 20000};
+      capturedValue = values[capturedPiece];
+    }
+
+    // 2. Promotion handling: Treat promotion as gaining a Queen (900)
+    if (move.promotion != NOPIECE) {
+      capturedValue += 900;
+    }
+
+    // 3. The Check
+    // We strictly use the constants now.
+    // If (My Current Score + The Piece I Get + Safety Margin) < Alpha...
+    // Then this move is hopeless. Prune it.
+    if (stand_pat + capturedValue + DELTA_MARGIN < alpha &&
+        capturedPiece != NOPIECE &&   // Safety: Always search if board state is weird
+        move.promotion == NOPIECE) {  // Safety: Always search promotions
+      continue;
     }
 
     // Now we search ALL interesting moves (Captures, En Passant, Promotions)
@@ -619,7 +639,7 @@ Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
 
 int Engine::evaluate(Position& pos) {
   // 1. Material + PST
-  int score = pos.mPosScore;
+  int score = pos.posEval.positionScore;
 
   // 2. Pawns & Safety
   score += (evalPawns(pos, WHITE) - evalPawns(pos, BLACK));

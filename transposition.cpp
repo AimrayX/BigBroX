@@ -2,22 +2,31 @@
 
 #include <iostream>
 
-// Threshold to detect if a score is a mate score (must match your INF)
 static const int MATE_BOUND = 900000;
-static const int INF_SCORE = 1000000;
 
 TranspositionTable::TranspositionTable(int sizeInMB) {
-  // Calculate how many entries fit in the given MB
-  // Size = (MB * 1024 * 1024) / sizeof(TTEntry)
   size_t bytes = sizeInMB * 1024 * 1024;
-  size = bytes / sizeof(TTEntry);
-  table.resize(size);
-  std::cout << "TT Initialized with " << size << " entries." << std::endl;
+
+  size_t targetBuckets = bytes / sizeof(TTBucket);
+
+  numBuckets = 1;
+  while (numBuckets * 2 <= targetBuckets) {
+    numBuckets *= 2;
+  }
+
+  // Resize vector. std::vector usually respects alignment of the type.
+  buckets.resize(numBuckets);
+
+  std::cout << "TT Initialized with " << numBuckets << " buckets (" << numBuckets * 4
+            << " entries)." << std::endl;
 }
 
 TranspositionTable::~TranspositionTable() {}
 
-void TranspositionTable::clear() { std::fill(table.begin(), table.end(), TTEntry()); }
+void TranspositionTable::clear() {
+  // Re-filling with empty buckets
+  std::fill(buckets.begin(), buckets.end(), TTBucket());
+}
 
 int TranspositionTable::scoreToTT(int score, int ply) {
   if (score > MATE_BOUND) return score + ply;
@@ -33,59 +42,72 @@ int TranspositionTable::scoreFromTT(int score, int ply) {
 
 void TranspositionTable::store(uint64_t key, int depth, int ply, int score, uint8_t flag,
                                Move move) {
-  // Map hash to index
-  size_t index = key % size;
+  // Use the key to find the bucket index
+  TTBucket& bucket = buckets[key & (numBuckets - 1)];
 
-  // Replacement Strategy:
-  // Always replace if:
-  // 1. The existing entry is from a different position (key collision or empty)
-  // 2. OR the new search is deeper (more valuable)
-  // 3. OR the new score is EXACT (very valuable)
+  int replaceIndex = -1;
+  int lowestDepth = 1000;
 
-  // Simple "Deepest or New" strategy:
-  if (table[index].key != key || depth >= table[index].depth) {
-    table[index].key = key;
-    table[index].depth = depth;
-    table[index].flag = flag;
-    table[index].score = scoreToTT(score, ply);
-    table[index].move = move;
+  for (int i = 0; i < 4; i++) {
+    const TTEntry& entry = bucket.entries[i];
+    if (entry.key == key || entry.key == 0) {
+      replaceIndex = i;
+      break;
+    }
+    if (entry.depth < lowestDepth) {
+      lowestDepth = entry.depth;
+      replaceIndex = i;
+    }
   }
+  if (replaceIndex == -1) replaceIndex = 0;  // Safety fallback
+
+  TTEntry& entry = bucket.entries[replaceIndex];
+  entry.key = key;
+  entry.move = TTMove(move);
+  entry.score = scoreToTT(score, ply);
+  entry.depth = (uint8_t)depth;
+  entry.flag = flag;
+  entry.generation = 1;
 }
 
 bool TranspositionTable::probe(uint64_t key, int depth, int ply, int alpha, int beta, int& outScore,
                                Move& outMove) {
-  size_t index = key % size;
-  const TTEntry& entry = table[index];
+  const TTBucket& bucket = buckets[key & (numBuckets - 1)];
 
-  // Check if the key matches (verify it's the same position)
-  if (entry.key == key) {
-    // Always return the move for ordering, even if depth is insufficient
-    outMove = (entry.move).toMove();
+  for (int i = 0; i < 4; i++) {
+    const TTEntry& entry = bucket.entries[i];
 
-    if (entry.depth >= depth) {
-      int score = scoreFromTT(entry.score, ply);
+    if (entry.key == key) {
+      outMove = entry.move.toMove();
 
-      if (entry.flag == TT_EXACT) {
-        outScore = score;
-        return true;
+      if (entry.depth >= depth) {
+        int score = scoreFromTT(entry.score, ply);
+        if (entry.flag == TT_EXACT) {
+          outScore = score;
+          return true;
+        }
+        if (entry.flag == TT_ALPHA && score <= alpha) {
+          outScore = alpha;
+          return true;
+        }
+        if (entry.flag == TT_BETA && score >= beta) {
+          outScore = beta;
+          return true;
+        }
       }
-      if (entry.flag == TT_ALPHA && score <= alpha) {
-        outScore = alpha;
-        return true;
-      }
-      if (entry.flag == TT_BETA && score >= beta) {
-        outScore = beta;
-        return true;
-      }
+      return false;  // Found key, but depth too low
     }
   }
   return false;
 }
 
 Move TranspositionTable::probeMove(uint64_t key) {
-  size_t index = key % size;
-  if (table[index].key == key) {
-    return (table[index].move).toMove();
+  const TTBucket& bucket = buckets[key & (numBuckets - 1)];
+
+  for (int i = 0; i < 4; i++) {
+    if (bucket.entries[i].key == key) {
+      return bucket.entries[i].move.toMove();
+    }
   }
-  return Move::null();  // Return empty move if not found
+  return Move::null();
 }

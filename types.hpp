@@ -24,30 +24,24 @@ struct Move {
   Move(uint8_t dFrom, uint8_t dTo, uint8_t dPromotion)
       : from(dFrom), to(dTo), promotion(dPromotion), padding(0), score(0) {}
 
-  static Move null() {
-    Move m;
-    m.from = 0;
-    m.to = 0;
-    m.promotion = NOPIECE;
-    return m;
-  }
+  static Move null() { return Move(); }
 };
 
 struct TTMove {
   uint16_t data;
 
-  TTMove() : data(0) {}
+  // Default to a value that decodes to Move::null() (from=0, to=0, promo=NOPIECE)
+  // NOPIECE is 6. 6 << 12 = 0x6000.
+  TTMove() : data(0x6000) {}
 
-  // Convert FROM your engine's Move class
   TTMove(const Move& m) {
-    // Mask just in case, though your values should be safe
-    data = (m.from & 0x3F) |             // Bits 0-5
-           ((m.to & 0x3F) << 6) |        // Bits 6-11
-           ((m.promotion & 0xF) << 12);  // Bits 12-15
+    data = (m.from & 0x3F) | ((m.to & 0x3F) << 6) | ((m.promotion & 0xF) << 12);
   }
 
-  // Convert BACK TO your engine's Move class
   Move toMove() const {
+    // If data matches our null signature, return null
+    if (data == 0x6000) return Move::null();
+
     int from = data & 0x3F;
     int to = (data >> 6) & 0x3F;
     int promo = (data >> 12) & 0xF;
@@ -76,10 +70,14 @@ struct StateInfo {
   int castle;
   uint64_t epSquare;
   int halfMove;
-
   int psqtScore;
-
   uint64_t zobristKey;
+};
+
+struct Eval {
+  int positionScore;
+  int pawnStructureScore;
+  int pieceMobilityScore;
 };
 
 inline constexpr std::array<std::string_view, 64> Squares = {

@@ -28,12 +28,13 @@ class Position {
   int board[64];
 
   uint64_t mHash;
-  int mPosScore;
 
   uint64_t getHash() const { return mHash; }
 
   StateInfo history[1024];
   int gamePly = 0;
+
+  Eval posEval;
 
   uint64_t attackGeneration(int square, int type, Color color);
   uint64_t getPseudoLegalMoves(int piece, int type, Color color);

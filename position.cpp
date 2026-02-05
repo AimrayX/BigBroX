@@ -73,7 +73,9 @@ int Position::getPieceValue(int piece, int square, Color color) {
 
 int Position::setStartingPosition(std::string startingPosition) {
   // Clear existing state first
-  mPosScore = 0;
+  posEval.positionScore = 0;
+  posEval.pawnStructureScore = 0;
+  posEval.pieceMobilityScore = 0;
 
   gamePly = 0;
 
@@ -177,14 +179,14 @@ int Position::setStartingPosition(std::string startingPosition) {
     uint64_t w = pieces[WHITE][p];
     while (w) {
       int sq = __builtin_ctzll(w);
-      mPosScore += getPieceValue(p, sq, WHITE);
+      posEval.positionScore += getPieceValue(p, sq, WHITE);
       mHash ^= Zobrist::pieceKeys[WHITE][p][sq];
       w &= (w - 1);
     }
     uint64_t b = pieces[BLACK][p];
     while (b) {
       int sq = __builtin_ctzll(b);
-      mPosScore += getPieceValue(p, sq, BLACK);
+      posEval.positionScore += getPieceValue(p, sq, BLACK);
       mHash ^= Zobrist::pieceKeys[BLACK][p][sq];
       b &= (b - 1);
     }
@@ -417,7 +419,7 @@ void Position::doMove(Move m) {
   state.castle = mCastleRight;
   state.epSquare = mEnPassentSquare;
   state.halfMove = mHalfMove;
-  state.psqtScore = mPosScore;
+  state.psqtScore = posEval.positionScore;
   state.zobristKey = mHash;
   state.movedPiece = board[m.from];
   state.capturedPiece = NOPIECE;
@@ -438,7 +440,7 @@ void Position::doMove(Move m) {
   mHash ^= Zobrist::pieceKeys[mSideToMove][state.movedPiece][m.from];
 
   // Update PSQT score - remove piece from source
-  mPosScore -= getPieceValue(state.movedPiece, m.from, mSideToMove);
+  posEval.positionScore -= getPieceValue(state.movedPiece, m.from, mSideToMove);
 
   // Handle capture
   if (board[m.to] != NOPIECE) {
@@ -446,7 +448,7 @@ void Position::doMove(Move m) {
     pieces[enemy][state.capturedPiece] ^= toMask;
     occupancies[enemy] ^= toMask;
     occupancies[2] ^= toMask;
-    mPosScore -= getPieceValue(state.capturedPiece, m.to, enemy);
+    posEval.positionScore -= getPieceValue(state.capturedPiece, m.to, enemy);
     mHash ^= Zobrist::pieceKeys[enemy][state.capturedPiece][m.to];
     mHalfMove = 0;
   } else if (state.movedPiece == PAWN) {
@@ -465,7 +467,7 @@ void Position::doMove(Move m) {
     board[m.from] = NOPIECE;
     board[m.to] = m.promotion;
 
-    mPosScore += getPieceValue(m.promotion, m.to, mSideToMove);
+    posEval.positionScore += getPieceValue(m.promotion, m.to, mSideToMove);
     mHash ^= Zobrist::pieceKeys[mSideToMove][m.promotion][m.to];
     mEnPassentSquare = 0;
   }
@@ -478,7 +480,7 @@ void Position::doMove(Move m) {
     board[m.from] = NOPIECE;
     board[m.to] = state.movedPiece;
 
-    mPosScore += getPieceValue(state.movedPiece, m.to, mSideToMove);
+    posEval.positionScore += getPieceValue(state.movedPiece, m.to, mSideToMove);
     mHash ^= Zobrist::pieceKeys[mSideToMove][state.movedPiece][m.to];
 
     // Handle castling
@@ -498,8 +500,8 @@ void Position::doMove(Move m) {
         board[rookIdx] = NOPIECE;
         board[rookDest] = ROOK;
 
-        mPosScore -= getPieceValue(ROOK, rookIdx, mSideToMove);
-        mPosScore += getPieceValue(ROOK, rookDest, mSideToMove);
+        posEval.positionScore -= getPieceValue(ROOK, rookIdx, mSideToMove);
+        posEval.positionScore += getPieceValue(ROOK, rookDest, mSideToMove);
         mHash ^= Zobrist::pieceKeys[mSideToMove][ROOK][rookIdx];
         mHash ^= Zobrist::pieceKeys[mSideToMove][ROOK][rookDest];
       }
@@ -519,7 +521,7 @@ void Position::doMove(Move m) {
         occupancies[2] ^= captureMask;
         board[captureSq] = NOPIECE;
 
-        mPosScore -= getPieceValue(PAWN, captureSq, enemy);
+        posEval.positionScore -= getPieceValue(PAWN, captureSq, enemy);
         mHash ^= Zobrist::pieceKeys[enemy][PAWN][captureSq];
       }
 
@@ -560,7 +562,7 @@ void Position::undoMove(Move m) {
   mEnPassentSquare = state.epSquare;
   mHalfMove = state.halfMove;
   mHash = state.zobristKey;
-  mPosScore = state.psqtScore;
+  posEval.positionScore = state.psqtScore;
 
   // Switch side back
   mSideToMove = (mSideToMove == WHITE) ? BLACK : WHITE;

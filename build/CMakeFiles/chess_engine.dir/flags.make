@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = -I/home/aimray/Projects/BigBroX
 
-CXX_FLAGS = -O3 -DNDEBUG -std=gnu++20 -O3 -march=native -Wall
+CXX_FLAGS = -O2 -g -DNDEBUG -std=gnu++20 -O3 -march=native -Wall
 
