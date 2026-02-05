@@ -3,6 +3,7 @@
 #include <chrono>
 #include <iostream>
 
+#include "attack.hpp"
 #include "types.hpp"
 #include "utils.hpp"
 
@@ -134,58 +135,93 @@ int evalKingSafety(const Position& pos, Color side) {
   return score;
 }
 
-// Piece Evaluation Bonuses (in centipawns)
+const int ROOK_OPEN_FILE_BONUS = 10;      // Lowered (Mobility covers the rest)
+const int ROOK_SEMI_OPEN_FILE_BONUS = 5;  // Lowered
+const int ROOK_ON_7TH_BONUS = 20;         // Keep this high
+
 const int BISHOP_PAIR_BONUS = 30;
-const int ROOK_OPEN_FILE_BONUS = 35;
-const int ROOK_SEMI_OPEN_FILE_BONUS = 15;
-const int ROOK_ON_7TH_BONUS = 20;
+
+// New Mobility Weights (Weight per attacked square)
+const int KNIGHT_MOBILITY = 4;
+const int BISHOP_MOBILITY = 5;
+const int ROOK_MOBILITY = 3;
+// const int QUEEN_MOBILITY = 2;
 
 int evalPieces(const Position& pos, Color side) {
   int score = 0;
+  uint64_t occupancy = pos.occupancies[2];
+  uint64_t myPawns = pos.pieces[side][PAWN];
+  uint64_t enemyPawns = pos.pieces[side ^ 1][PAWN];
 
   // --- BISHOPS ---
   uint64_t bishops = pos.pieces[side][BISHOP];
-  // Check for Bishop Pair (more than 1 bishop)
-  if (__builtin_popcountll(bishops) >= 2) {
-    score += BISHOP_PAIR_BONUS;
+  if (__builtin_popcountll(bishops) >= 2) score += BISHOP_PAIR_BONUS;
+
+  while (bishops) {
+    int sq = __builtin_ctzll(bishops);
+
+    // Mobility: Count attacked squares
+    uint64_t attacks = attack::getBishopAttacks(sq, occupancy);
+    score += __builtin_popcountll(attacks) * BISHOP_MOBILITY;
+
+    bishops &= (bishops - 1);
+  }
+
+  // --- KNIGHTS ---
+  uint64_t knights = pos.pieces[side][KNIGHT];
+  while (knights) {
+    int sq = __builtin_ctzll(knights);
+    // We use the precomputed attack table directly
+    uint64_t attacks = attack::knightAttacks[sq];
+    // We don't care about occupancy for knight mobility (freedom of movement)
+    // possibly mask with ~my_pieces to count only valid moves
+    score += __builtin_popcountll(attacks & ~pos.occupancies[side]) * KNIGHT_MOBILITY;
+    knights &= (knights - 1);
   }
 
   // --- ROOKS ---
   uint64_t rooks = pos.pieces[side][ROOK];
-  uint64_t myPawns = pos.pieces[side][PAWN];
-  uint64_t enemyPawns = pos.pieces[side ^ 1][PAWN];
-
   while (rooks) {
     int sq = __builtin_ctzll(rooks);
     int file = sq % 8;
     int rank = sq / 8;
 
-    // 1. Open/Semi-Open Files
-    uint64_t fileMask = FILE_A << file;
-    bool myPawnOnFile = (myPawns & fileMask) != 0;
-    bool enemyPawnOnFile = (enemyPawns & fileMask) != 0;
+    // Mobility
+    uint64_t attacks = attack::getRookAttacks(sq, occupancy);
+    score += __builtin_popcountll(attacks) * ROOK_MOBILITY;
 
-    if (!myPawnOnFile) {
-      if (!enemyPawnOnFile) {
-        score += ROOK_OPEN_FILE_BONUS;  // Fully open
+    // Static Open File Bonus (Reduced, but still useful)
+    uint64_t fileMask = FILE_A << file;
+    if (!(myPawns & fileMask)) {
+      if (!(enemyPawns & fileMask)) {
+        score += ROOK_OPEN_FILE_BONUS;
       } else {
-        score += ROOK_SEMI_OPEN_FILE_BONUS;  // Semi-open (attack enemy pawn)
+        score += ROOK_SEMI_OPEN_FILE_BONUS;
       }
     }
 
-    // 2. Rook on 7th Rank (Rank 1 for Black, Rank 6 for White 0-indexed)
+    // Rook on 7th
     int relativeRank = (side == WHITE) ? rank : (7 - rank);
     if (relativeRank == 6) {
-      // Bonus only applies if the opponent king is on the back rank
-      // (Otherwise it's just a random rook push)
       int enemyKingRank = __builtin_ctzll(pos.pieces[side ^ 1][KING]) / 8;
       if ((side == WHITE && enemyKingRank == 7) || (side == BLACK && enemyKingRank == 0)) {
         score += ROOK_ON_7TH_BONUS;
       }
     }
-
     rooks &= (rooks - 1);
   }
+
+  // --- QUEENS ---
+  // (Optional: Queen mobility is expensive/noisy, but good for "centralization")
+  /*
+  uint64_t queens = pos.pieces[side][QUEEN];
+  while (queens) {
+      int sq = __builtin_ctzll(queens);
+      uint64_t attacks = attack::getQueenAttacks(sq, occupancy);
+      score += __builtin_popcountll(attacks) * QUEEN_MOBILITY;
+      queens &= (queens - 1);
+  }
+  */
 
   return score;
 }
@@ -602,7 +638,7 @@ int Engine::getDepth() { return mDepth; }
 Engine::Engine() : tt(64) {
   mCurrentDepth = 0;
   mCurrentEval = 0;
-  mDepth = 15;
+  mDepth = 20;
   mTimeSpentMs = 0;
 
   // Initialize PV table

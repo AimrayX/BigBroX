@@ -382,6 +382,7 @@ CMakeFiles/chess_engine.dir/attack.cpp.o: /home/aimray/Projects/BigBroX/attack.c
   /usr/lib64/gcc/x86_64-suse-linux/15/include/stdint.h
 
 CMakeFiles/chess_engine.dir/engine.cpp.o: /home/aimray/Projects/BigBroX/engine.cpp \
+  /home/aimray/Projects/BigBroX/attack.hpp \
   /home/aimray/Projects/BigBroX/engine.hpp \
   /home/aimray/Projects/BigBroX/position.hpp \
   /home/aimray/Projects/BigBroX/transposition.hpp \
