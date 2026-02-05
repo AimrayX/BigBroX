@@ -46,7 +46,7 @@ class Position {
   void getCaptures(Color color, MoveList& moveList);
   bool isSquareAttacked(int square, Color sideAttacking);
   bool isRepetition();
-  inline void addPawnCaptureMove(int from, int to, uint64_t enemies, MoveList& moveList);
+  inline void addPawnCaptureMove(int from, int to, MoveList& moveList);
 
   void printBoard();
 

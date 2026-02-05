@@ -432,13 +432,16 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
   // --- TT PROBE ---
   int ttScore;
   Move ttMove = Move::null();
-  // Try to retrieve a cutoff score
+  
   if (tt.probe(pos.getHash(), depth, ply, alpha, beta, ttScore, ttMove)) {
-    // If we get a valid cutoff (exact, beta, or alpha), we can return immediately!
-    // Exception: If we are at the root (ply 0), we usually want to search to ensure we have a PV,
-    // unless it's a mate score. For simplicity, we return here.
     if (ply > 0) return ttScore;
   }
+
+  // OPTIMIZATION: Prefetch next TT entry (commented out for now)
+  // if (depth > 1 && ttMove.from != 0) {
+  //   uint64_t childKey = computeChildKey(pos, ttMove);
+  //   __builtin_prefetch(&tt.buckets[childKey & (tt.numBuckets - 1)]);
+  // }
 
   if (depth == 0) {
     return quiescence(pos, alpha, beta, stoken);
@@ -447,13 +450,38 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
   MoveList moveList;
   pos.getMoves(pos.mSideToMove, moveList);
 
+  // OPTIMIZATION: Better move ordering
   for (int i = 0; i < moveList.count; i++) {
-    if (ttMove.from != 0 &&  // Check if ttMove is valid
-        moveList.moves[i].from == ttMove.from && moveList.moves[i].to == ttMove.to) {
-      moveList.moves[i].score = 2000000;  // Higher than any capture
-      break;
+    Move& m = moveList.moves[i];
+    
+    // 1. TT move gets highest priority
+    if (ttMove.from != 0 && m.from == ttMove.from && m.to == ttMove.to) {
+      m.score = 2000000;
+    }
+    // 2. Winning captures (MVV-LVA)
+    else if (pos.board[m.to] != NOPIECE) {
+      int victim = pos.board[m.to];
+      int attacker = pos.board[m.from];
+      m.score = 1000000 + mvv_lva[victim][attacker];
+    }
+    // 3. Promotions
+    else if (m.promotion != NOPIECE) {
+      m.score = 900000 + pieceValues[m.promotion];
+    }
+    // 4. Killer moves
+    else if (ply >= 0 && ply < MAX_PLY) {
+      if (m.from == killerMoves[ply][0].from && m.to == killerMoves[ply][0].to) {
+        m.score = 800000;
+      } else if (m.from == killerMoves[ply][1].from && m.to == killerMoves[ply][1].to) {
+        m.score = 700000;
+      } else {
+        // 5. History heuristic
+        int mover = (pos.mSideToMove == WHITE) ? WHITE : BLACK;
+        m.score = historyMoves[mover][m.from][m.to];
+      }
     } else {
-      moveList.moves[i].score = scoreMove(moveList.moves[i], pos, ply);
+      int mover = (pos.mSideToMove == WHITE) ? WHITE : BLACK;
+      m.score = historyMoves[mover][m.from][m.to];
     }
   }
 
@@ -485,14 +513,13 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
     if (score > bestScore) {
       bestScore = score;
       bestMove = moveList.moves[i];
-      // Always update PV for the best move found so far
+      
       pvTable[ply][ply] = moveList.moves[i];
 
-      // Copy the rest of the PV from the child position
       for (int j = ply + 1; j < pvLength[ply + 1]; j++) {
         pvTable[ply][j] = pvTable[ply + 1][j];
       }
-      // PV length includes our move plus the child's PV
+      
       pvLength[ply] = (pvLength[ply + 1] > ply + 1) ? pvLength[ply + 1] : (ply + 1);
 
       if (score > alpha) {
@@ -501,6 +528,7 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
     }
 
     if (alpha >= beta) {
+      // Update history and killer moves for quiet moves
       if (pos.board[moveList.moves[i].to] == NOPIECE) {
         int mover = (pos.mSideToMove == WHITE) ? WHITE : BLACK;
         int from = moveList.moves[i].from;
@@ -533,6 +561,7 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
       return 0;
     }
   }
+  
   TTFlag flag = TT_ALPHA;
   if (bestScore > originalAlpha) {
     flag = TT_EXACT;
@@ -661,7 +690,7 @@ int Engine::getDepth() { return mDepth; }
 Engine::Engine() : tt(64) {
   mCurrentDepth = 0;
   mCurrentEval = 0;
-  mDepth = 20;
+  mDepth = 30;
   mTimeSpentMs = 0;
 
   // Initialize PV table

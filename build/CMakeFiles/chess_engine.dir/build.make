@@ -86,19 +86,19 @@ CMakeFiles/chess_engine.dir/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/chess_engine.dir/main.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aimray/Projects/BigBroX/main.cpp -o CMakeFiles/chess_engine.dir/main.cpp.s
 
-CMakeFiles/chess_engine.dir/attack.cpp.o: CMakeFiles/chess_engine.dir/flags.make
-CMakeFiles/chess_engine.dir/attack.cpp.o: /home/aimray/Projects/BigBroX/attack.cpp
-CMakeFiles/chess_engine.dir/attack.cpp.o: CMakeFiles/chess_engine.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/aimray/Projects/BigBroX/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/chess_engine.dir/attack.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/chess_engine.dir/attack.cpp.o -MF CMakeFiles/chess_engine.dir/attack.cpp.o.d -o CMakeFiles/chess_engine.dir/attack.cpp.o -c /home/aimray/Projects/BigBroX/attack.cpp
+CMakeFiles/chess_engine.dir/engine.cpp.o: CMakeFiles/chess_engine.dir/flags.make
+CMakeFiles/chess_engine.dir/engine.cpp.o: /home/aimray/Projects/BigBroX/engine.cpp
+CMakeFiles/chess_engine.dir/engine.cpp.o: CMakeFiles/chess_engine.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/aimray/Projects/BigBroX/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/chess_engine.dir/engine.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/chess_engine.dir/engine.cpp.o -MF CMakeFiles/chess_engine.dir/engine.cpp.o.d -o CMakeFiles/chess_engine.dir/engine.cpp.o -c /home/aimray/Projects/BigBroX/engine.cpp
 
-CMakeFiles/chess_engine.dir/attack.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/chess_engine.dir/attack.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aimray/Projects/BigBroX/attack.cpp > CMakeFiles/chess_engine.dir/attack.cpp.i
+CMakeFiles/chess_engine.dir/engine.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/chess_engine.dir/engine.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aimray/Projects/BigBroX/engine.cpp > CMakeFiles/chess_engine.dir/engine.cpp.i
 
-CMakeFiles/chess_engine.dir/attack.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/chess_engine.dir/attack.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aimray/Projects/BigBroX/attack.cpp -o CMakeFiles/chess_engine.dir/attack.cpp.s
+CMakeFiles/chess_engine.dir/engine.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/chess_engine.dir/engine.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aimray/Projects/BigBroX/engine.cpp -o CMakeFiles/chess_engine.dir/engine.cpp.s
 
 CMakeFiles/chess_engine.dir/position.cpp.o: CMakeFiles/chess_engine.dir/flags.make
 CMakeFiles/chess_engine.dir/position.cpp.o: /home/aimray/Projects/BigBroX/position.cpp
@@ -114,66 +114,10 @@ CMakeFiles/chess_engine.dir/position.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/chess_engine.dir/position.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aimray/Projects/BigBroX/position.cpp -o CMakeFiles/chess_engine.dir/position.cpp.s
 
-CMakeFiles/chess_engine.dir/engine.cpp.o: CMakeFiles/chess_engine.dir/flags.make
-CMakeFiles/chess_engine.dir/engine.cpp.o: /home/aimray/Projects/BigBroX/engine.cpp
-CMakeFiles/chess_engine.dir/engine.cpp.o: CMakeFiles/chess_engine.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/aimray/Projects/BigBroX/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/chess_engine.dir/engine.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/chess_engine.dir/engine.cpp.o -MF CMakeFiles/chess_engine.dir/engine.cpp.o.d -o CMakeFiles/chess_engine.dir/engine.cpp.o -c /home/aimray/Projects/BigBroX/engine.cpp
-
-CMakeFiles/chess_engine.dir/engine.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/chess_engine.dir/engine.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aimray/Projects/BigBroX/engine.cpp > CMakeFiles/chess_engine.dir/engine.cpp.i
-
-CMakeFiles/chess_engine.dir/engine.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/chess_engine.dir/engine.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aimray/Projects/BigBroX/engine.cpp -o CMakeFiles/chess_engine.dir/engine.cpp.s
-
-CMakeFiles/chess_engine.dir/game.cpp.o: CMakeFiles/chess_engine.dir/flags.make
-CMakeFiles/chess_engine.dir/game.cpp.o: /home/aimray/Projects/BigBroX/game.cpp
-CMakeFiles/chess_engine.dir/game.cpp.o: CMakeFiles/chess_engine.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/aimray/Projects/BigBroX/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/chess_engine.dir/game.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/chess_engine.dir/game.cpp.o -MF CMakeFiles/chess_engine.dir/game.cpp.o.d -o CMakeFiles/chess_engine.dir/game.cpp.o -c /home/aimray/Projects/BigBroX/game.cpp
-
-CMakeFiles/chess_engine.dir/game.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/chess_engine.dir/game.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aimray/Projects/BigBroX/game.cpp > CMakeFiles/chess_engine.dir/game.cpp.i
-
-CMakeFiles/chess_engine.dir/game.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/chess_engine.dir/game.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aimray/Projects/BigBroX/game.cpp -o CMakeFiles/chess_engine.dir/game.cpp.s
-
-CMakeFiles/chess_engine.dir/UCIHandler.cpp.o: CMakeFiles/chess_engine.dir/flags.make
-CMakeFiles/chess_engine.dir/UCIHandler.cpp.o: /home/aimray/Projects/BigBroX/UCIHandler.cpp
-CMakeFiles/chess_engine.dir/UCIHandler.cpp.o: CMakeFiles/chess_engine.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/aimray/Projects/BigBroX/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/chess_engine.dir/UCIHandler.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/chess_engine.dir/UCIHandler.cpp.o -MF CMakeFiles/chess_engine.dir/UCIHandler.cpp.o.d -o CMakeFiles/chess_engine.dir/UCIHandler.cpp.o -c /home/aimray/Projects/BigBroX/UCIHandler.cpp
-
-CMakeFiles/chess_engine.dir/UCIHandler.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/chess_engine.dir/UCIHandler.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aimray/Projects/BigBroX/UCIHandler.cpp > CMakeFiles/chess_engine.dir/UCIHandler.cpp.i
-
-CMakeFiles/chess_engine.dir/UCIHandler.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/chess_engine.dir/UCIHandler.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aimray/Projects/BigBroX/UCIHandler.cpp -o CMakeFiles/chess_engine.dir/UCIHandler.cpp.s
-
-CMakeFiles/chess_engine.dir/utils.cpp.o: CMakeFiles/chess_engine.dir/flags.make
-CMakeFiles/chess_engine.dir/utils.cpp.o: /home/aimray/Projects/BigBroX/utils.cpp
-CMakeFiles/chess_engine.dir/utils.cpp.o: CMakeFiles/chess_engine.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/aimray/Projects/BigBroX/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/chess_engine.dir/utils.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/chess_engine.dir/utils.cpp.o -MF CMakeFiles/chess_engine.dir/utils.cpp.o.d -o CMakeFiles/chess_engine.dir/utils.cpp.o -c /home/aimray/Projects/BigBroX/utils.cpp
-
-CMakeFiles/chess_engine.dir/utils.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/chess_engine.dir/utils.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aimray/Projects/BigBroX/utils.cpp > CMakeFiles/chess_engine.dir/utils.cpp.i
-
-CMakeFiles/chess_engine.dir/utils.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/chess_engine.dir/utils.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aimray/Projects/BigBroX/utils.cpp -o CMakeFiles/chess_engine.dir/utils.cpp.s
-
 CMakeFiles/chess_engine.dir/transposition.cpp.o: CMakeFiles/chess_engine.dir/flags.make
 CMakeFiles/chess_engine.dir/transposition.cpp.o: /home/aimray/Projects/BigBroX/transposition.cpp
 CMakeFiles/chess_engine.dir/transposition.cpp.o: CMakeFiles/chess_engine.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/aimray/Projects/BigBroX/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/chess_engine.dir/transposition.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/aimray/Projects/BigBroX/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/chess_engine.dir/transposition.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/chess_engine.dir/transposition.cpp.o -MF CMakeFiles/chess_engine.dir/transposition.cpp.o.d -o CMakeFiles/chess_engine.dir/transposition.cpp.o -c /home/aimray/Projects/BigBroX/transposition.cpp
 
 CMakeFiles/chess_engine.dir/transposition.cpp.i: cmake_force
@@ -184,28 +128,84 @@ CMakeFiles/chess_engine.dir/transposition.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/chess_engine.dir/transposition.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aimray/Projects/BigBroX/transposition.cpp -o CMakeFiles/chess_engine.dir/transposition.cpp.s
 
+CMakeFiles/chess_engine.dir/attack.cpp.o: CMakeFiles/chess_engine.dir/flags.make
+CMakeFiles/chess_engine.dir/attack.cpp.o: /home/aimray/Projects/BigBroX/attack.cpp
+CMakeFiles/chess_engine.dir/attack.cpp.o: CMakeFiles/chess_engine.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/aimray/Projects/BigBroX/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/chess_engine.dir/attack.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/chess_engine.dir/attack.cpp.o -MF CMakeFiles/chess_engine.dir/attack.cpp.o.d -o CMakeFiles/chess_engine.dir/attack.cpp.o -c /home/aimray/Projects/BigBroX/attack.cpp
+
+CMakeFiles/chess_engine.dir/attack.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/chess_engine.dir/attack.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aimray/Projects/BigBroX/attack.cpp > CMakeFiles/chess_engine.dir/attack.cpp.i
+
+CMakeFiles/chess_engine.dir/attack.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/chess_engine.dir/attack.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aimray/Projects/BigBroX/attack.cpp -o CMakeFiles/chess_engine.dir/attack.cpp.s
+
+CMakeFiles/chess_engine.dir/utils.cpp.o: CMakeFiles/chess_engine.dir/flags.make
+CMakeFiles/chess_engine.dir/utils.cpp.o: /home/aimray/Projects/BigBroX/utils.cpp
+CMakeFiles/chess_engine.dir/utils.cpp.o: CMakeFiles/chess_engine.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/aimray/Projects/BigBroX/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/chess_engine.dir/utils.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/chess_engine.dir/utils.cpp.o -MF CMakeFiles/chess_engine.dir/utils.cpp.o.d -o CMakeFiles/chess_engine.dir/utils.cpp.o -c /home/aimray/Projects/BigBroX/utils.cpp
+
+CMakeFiles/chess_engine.dir/utils.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/chess_engine.dir/utils.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aimray/Projects/BigBroX/utils.cpp > CMakeFiles/chess_engine.dir/utils.cpp.i
+
+CMakeFiles/chess_engine.dir/utils.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/chess_engine.dir/utils.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aimray/Projects/BigBroX/utils.cpp -o CMakeFiles/chess_engine.dir/utils.cpp.s
+
+CMakeFiles/chess_engine.dir/UCIHandler.cpp.o: CMakeFiles/chess_engine.dir/flags.make
+CMakeFiles/chess_engine.dir/UCIHandler.cpp.o: /home/aimray/Projects/BigBroX/UCIHandler.cpp
+CMakeFiles/chess_engine.dir/UCIHandler.cpp.o: CMakeFiles/chess_engine.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/aimray/Projects/BigBroX/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/chess_engine.dir/UCIHandler.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/chess_engine.dir/UCIHandler.cpp.o -MF CMakeFiles/chess_engine.dir/UCIHandler.cpp.o.d -o CMakeFiles/chess_engine.dir/UCIHandler.cpp.o -c /home/aimray/Projects/BigBroX/UCIHandler.cpp
+
+CMakeFiles/chess_engine.dir/UCIHandler.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/chess_engine.dir/UCIHandler.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aimray/Projects/BigBroX/UCIHandler.cpp > CMakeFiles/chess_engine.dir/UCIHandler.cpp.i
+
+CMakeFiles/chess_engine.dir/UCIHandler.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/chess_engine.dir/UCIHandler.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aimray/Projects/BigBroX/UCIHandler.cpp -o CMakeFiles/chess_engine.dir/UCIHandler.cpp.s
+
+CMakeFiles/chess_engine.dir/game.cpp.o: CMakeFiles/chess_engine.dir/flags.make
+CMakeFiles/chess_engine.dir/game.cpp.o: /home/aimray/Projects/BigBroX/game.cpp
+CMakeFiles/chess_engine.dir/game.cpp.o: CMakeFiles/chess_engine.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/aimray/Projects/BigBroX/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/chess_engine.dir/game.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/chess_engine.dir/game.cpp.o -MF CMakeFiles/chess_engine.dir/game.cpp.o.d -o CMakeFiles/chess_engine.dir/game.cpp.o -c /home/aimray/Projects/BigBroX/game.cpp
+
+CMakeFiles/chess_engine.dir/game.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/chess_engine.dir/game.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/aimray/Projects/BigBroX/game.cpp > CMakeFiles/chess_engine.dir/game.cpp.i
+
+CMakeFiles/chess_engine.dir/game.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/chess_engine.dir/game.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/aimray/Projects/BigBroX/game.cpp -o CMakeFiles/chess_engine.dir/game.cpp.s
+
 # Object files for target chess_engine
 chess_engine_OBJECTS = \
 "CMakeFiles/chess_engine.dir/main.cpp.o" \
-"CMakeFiles/chess_engine.dir/attack.cpp.o" \
-"CMakeFiles/chess_engine.dir/position.cpp.o" \
 "CMakeFiles/chess_engine.dir/engine.cpp.o" \
-"CMakeFiles/chess_engine.dir/game.cpp.o" \
-"CMakeFiles/chess_engine.dir/UCIHandler.cpp.o" \
+"CMakeFiles/chess_engine.dir/position.cpp.o" \
+"CMakeFiles/chess_engine.dir/transposition.cpp.o" \
+"CMakeFiles/chess_engine.dir/attack.cpp.o" \
 "CMakeFiles/chess_engine.dir/utils.cpp.o" \
-"CMakeFiles/chess_engine.dir/transposition.cpp.o"
+"CMakeFiles/chess_engine.dir/UCIHandler.cpp.o" \
+"CMakeFiles/chess_engine.dir/game.cpp.o"
 
 # External object files for target chess_engine
 chess_engine_EXTERNAL_OBJECTS =
 
 chess_engine: CMakeFiles/chess_engine.dir/main.cpp.o
-chess_engine: CMakeFiles/chess_engine.dir/attack.cpp.o
-chess_engine: CMakeFiles/chess_engine.dir/position.cpp.o
 chess_engine: CMakeFiles/chess_engine.dir/engine.cpp.o
-chess_engine: CMakeFiles/chess_engine.dir/game.cpp.o
-chess_engine: CMakeFiles/chess_engine.dir/UCIHandler.cpp.o
-chess_engine: CMakeFiles/chess_engine.dir/utils.cpp.o
+chess_engine: CMakeFiles/chess_engine.dir/position.cpp.o
 chess_engine: CMakeFiles/chess_engine.dir/transposition.cpp.o
+chess_engine: CMakeFiles/chess_engine.dir/attack.cpp.o
+chess_engine: CMakeFiles/chess_engine.dir/utils.cpp.o
+chess_engine: CMakeFiles/chess_engine.dir/UCIHandler.cpp.o
+chess_engine: CMakeFiles/chess_engine.dir/game.cpp.o
 chess_engine: CMakeFiles/chess_engine.dir/build.make
 chess_engine: CMakeFiles/chess_engine.dir/compiler_depend.ts
 chess_engine: CMakeFiles/chess_engine.dir/link.txt

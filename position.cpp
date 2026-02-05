@@ -277,12 +277,12 @@ void Position::getCaptures(Color color, MoveList& moveList) {
 
       // Check potential source squares
       if (to >= 9 && (pawns & (1ULL << from_ne)) && (from_ne % 8 != 7)) {
-        addPawnCaptureMove(from_ne, to, enemies, moveList);
+        addPawnCaptureMove(from_ne, to, moveList);
       }
       // We use 'else if' or just separate checks.
       // Separate checks are needed if two pawns capture to the same square.
       if (to >= 7 && (pawns & (1ULL << from_nw)) && (from_nw % 8 != 0)) {
-        addPawnCaptureMove(from_nw, to, enemies, moveList);
+        addPawnCaptureMove(from_nw, to, moveList);
       }
 
       pawnAttacks &= (pawnAttacks - 1);  // Clear LS1B
@@ -301,10 +301,10 @@ void Position::getCaptures(Color color, MoveList& moveList) {
       int from_sw = to + 9;
 
       if (from_se < 64 && (pawns & (1ULL << from_se)) && (from_se % 8 != 0)) {
-        addPawnCaptureMove(from_se, to, enemies, moveList);
+        addPawnCaptureMove(from_se, to, moveList);
       }
       if (from_sw < 64 && (pawns & (1ULL << from_sw)) && (from_sw % 8 != 7)) {
-        addPawnCaptureMove(from_sw, to, enemies, moveList);
+        addPawnCaptureMove(from_sw, to, moveList);
       }
       pawnAttacks &= (pawnAttacks - 1);
     }
@@ -335,7 +335,7 @@ void Position::getCaptures(Color color, MoveList& moveList) {
             static const int aggressorScores[] = {100, 300, 310, 500, 900, 20000};
             score = victimScores[victim] - (aggressorScores[type] / 10) + 10000;
           }
-          moveList.add(Move(from, to, NOPIECE), score);
+          moveList.add({(uint8_t)from, (uint8_t)to, NOPIECE, 0, 0}, score);
         }
 
         attacks &= (attacks - 1);
@@ -348,14 +348,14 @@ void Position::getCaptures(Color color, MoveList& moveList) {
 
 // 3. Helper function for adding pawn moves (handling promotions/En Passant)
 // Add this as a private helper method in your Position class or inline it.
-inline void Position::addPawnCaptureMove(int from, int to, uint64_t enemies, MoveList& moveList) {
+inline void Position::addPawnCaptureMove(int from, int to, MoveList& moveList) {
   int victim = board[to];
   int score = 0;
 
   // En Passant Case
   if (victim == NOPIECE) {  // Must be EP if we are here
     score = 105 + 10000;    // Value of pawn capture
-    moveList.add(Move(from, to, NOPIECE), score);
+    moveList.add({(uint8_t)from, (uint8_t)to, NOPIECE, 0, 0}, score);
     return;
   }
 
@@ -367,12 +367,12 @@ inline void Position::addPawnCaptureMove(int from, int to, uint64_t enemies, Mov
   // If target is Rank 0 or Rank 7
   if (to >= 56 || to <= 7) {
     score += 9000;  // Promotion bonus
-    moveList.add(Move(from, to, QUEEN), score);
-    moveList.add(Move(from, to, KNIGHT), score);
-    moveList.add(Move(from, to, ROOK), score);
-    moveList.add(Move(from, to, BISHOP), score);
+    moveList.add({(uint8_t)from, (uint8_t)to, QUEEN, 0, 0}, score);
+    moveList.add({(uint8_t)from, (uint8_t)to, KNIGHT, 0, 0}, score);
+    moveList.add({(uint8_t)from, (uint8_t)to, ROOK, 0, 0}, score);
+    moveList.add({(uint8_t)from, (uint8_t)to, BISHOP, 0, 0}, score);
   } else {
-    moveList.add(Move(from, to, NOPIECE), score);
+    moveList.add({(uint8_t)from, (uint8_t)to, NOPIECE, 0, 0}, score);
   }
 }
 
@@ -669,12 +669,12 @@ void Position::getMoves(Color color, MoveList& moveList) {
         }
 
         if (i == PAWN && (targetSquare / 8) == ((color == WHITE) ? 7 : 0)) {
-          moveList.add(Move(sourceSquare, targetSquare, QUEEN), score);
-          moveList.add(Move(sourceSquare, targetSquare, KNIGHT), score);
-          moveList.add(Move(sourceSquare, targetSquare, BISHOP), score);
-          moveList.add(Move(sourceSquare, targetSquare, ROOK), score);
+          moveList.add({(uint8_t)sourceSquare, (uint8_t)targetSquare, QUEEN, 0, 0}, score);
+          moveList.add({(uint8_t)sourceSquare, (uint8_t)targetSquare, KNIGHT, 0, 0}, score);
+          moveList.add({(uint8_t)sourceSquare, (uint8_t)targetSquare, BISHOP, 0, 0}, score);
+          moveList.add({(uint8_t)sourceSquare, (uint8_t)targetSquare, ROOK, 0, 0}, score);
         } else {
-          moveList.add(Move(sourceSquare, targetSquare, NOPIECE), score);
+          moveList.add({(uint8_t)sourceSquare, (uint8_t)targetSquare, NOPIECE, 0, 0}, score);
         }
         validTargets &= (validTargets - 1);
       }
@@ -685,7 +685,7 @@ void Position::getMoves(Color color, MoveList& moveList) {
     if ((mCastleRight & WHITE_OO) && !(occupancies[2] & ((1ULL << 5) | (1ULL << 6)))) {
       if (!isSquareAttacked(4, BLACK) && !isSquareAttacked(5, BLACK) &&
           !isSquareAttacked(6, BLACK)) {
-        moveList.add(Move(4, 6, NOPIECE), 0);  // e1g1
+        moveList.add({4, 6, NOPIECE, 0, 0}, 0);  // e1g1
       }
     }
 
@@ -693,14 +693,14 @@ void Position::getMoves(Color color, MoveList& moveList) {
         !(occupancies[2] & ((1ULL << 1) | (1ULL << 2) | (1ULL << 3)))) {
       if (!isSquareAttacked(4, BLACK) && !isSquareAttacked(3, BLACK) &&
           !isSquareAttacked(2, BLACK)) {
-        moveList.add(Move(4, 2, NOPIECE), 0);  // e1c1
+        moveList.add({4, 2, NOPIECE, 0, 0}, 0);  // e1c1
       }
     }
   } else {
     if ((mCastleRight & BLACK_OO) && !(occupancies[2] & ((1ULL << 61) | (1ULL << 62)))) {
       if (!isSquareAttacked(60, WHITE) && !isSquareAttacked(61, WHITE) &&
           !isSquareAttacked(62, WHITE)) {
-        moveList.add(Move(60, 62, NOPIECE), 0);  // e8g8
+        moveList.add({60, 62, NOPIECE, 0, 0}, 0);  // e8g8
       }
     }
 
@@ -708,7 +708,7 @@ void Position::getMoves(Color color, MoveList& moveList) {
         !(occupancies[2] & ((1ULL << 57) | (1ULL << 58) | (1ULL << 59)))) {
       if (!isSquareAttacked(60, WHITE) && !isSquareAttacked(59, WHITE) &&
           !isSquareAttacked(58, WHITE)) {
-        moveList.add(Move(60, 58, NOPIECE), 0);  // e8c8
+        moveList.add({60, 58, NOPIECE, 0, 0}, 0);  // e8c8
       }
     }
   }

@@ -19,12 +19,14 @@ struct Move {
   uint8_t padding;
   int32_t score;
 
-  Move() = default;
-
-  Move(uint8_t dFrom, uint8_t dTo, uint8_t dPromotion)
-      : from(dFrom), to(dTo), promotion(dPromotion), padding(0), score(0) {}
-
-  static Move null() { return Move(); }
+  static Move null() {
+    Move m;
+    m.from = 0;
+    m.to = 0;
+    m.promotion = NOPIECE;
+    m.score = 0;
+    return m;
+  }
 };
 
 struct TTMove {
@@ -45,7 +47,7 @@ struct TTMove {
     int from = data & 0x3F;
     int to = (data >> 6) & 0x3F;
     int promo = (data >> 12) & 0xF;
-    return Move(from, to, promo);
+    return { (uint8_t)from, (uint8_t)to, (uint8_t)promo, 0, 0 };
   }
 };
 
