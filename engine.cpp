@@ -316,92 +316,82 @@ int Engine::scoreMove(const Move& m, Position& pos, int ply) {
 }
 
 int Engine::quiescence(Position& pos, int alpha, int beta, std::stop_token& stoken) {
-  if (stoken.stop_requested()) {
-    return 0;
-  }
+  if (stoken.stop_requested()) return 0;
 
   if ((nodes & 2047) == 0) {
     auto now = std::chrono::steady_clock::now();
     long long elapsed =
         std::chrono::duration_cast<std::chrono::milliseconds>(now - mStartTime).count();
-
     if (elapsed >= mTimeAllocated) {
       mStop = true;
+      return 0;
     }
   }
   nodes++;
 
-  if (mStop) return 0;
+  // OPTIMIZATION: Stand-pat using only material/PSQT (very cheap!)
+  int standPat = pos.posEval.positionScore;
+  standPat = (pos.mSideToMove == WHITE) ? standPat : -standPat;
+  
+  // OPTIMIZATION: Delta pruning
+  // If we're so far behind that even capturing a queen can't help, give up
+  const int BIG_DELTA = 925;  // Queen value + margin
+  if (standPat + BIG_DELTA < alpha) {
+    return alpha;  // Futile position, no point searching
+  }
 
-  int stand_pat = evaluate(pos);
-
-  if (stand_pat >= beta) {
+  // Beta cutoff with stand-pat
+  if (standPat >= beta) {
     return beta;
   }
 
-  const int delta = 1100;
+  // Update alpha
+  if (standPat > alpha) {
+    alpha = standPat;
+  }
 
-  if (stand_pat < alpha - delta) {
-    // Exception: If a Pawn is about to promote, we can't prune safely.
-    // We check if any pawn is on the 7th rank (White) or 2nd rank (Black).
-    // This uses bitboards for a fast check.
-    bool promoting = (pos.pieces[pos.mSideToMove][PAWN] &
-                      ((pos.mSideToMove == WHITE) ? 0x00FF000000000000ULL : 0x000000000000FF00ULL));
+  // Generate and search captures
+  MoveList captureList;
+  pos.getCaptures(pos.mSideToMove, captureList);
 
-    if (!promoting) {
-      return alpha;
+  // Score captures using MVV-LVA
+  for (int i = 0; i < captureList.count; i++) {
+    Move& move = captureList.moves[i];
+    int victim = pos.board[move.to];
+    int attacker = pos.board[move.from];
+
+    if (victim != NOPIECE && attacker != NOPIECE) {
+      move.score = mvv_lva[victim][attacker];
+    } else if (move.promotion != NOPIECE) {
+      move.score = 1000 + pieceValues[move.promotion];
+    } else {
+      move.score = 0;
     }
   }
 
-  if (stand_pat > alpha) {
-    alpha = stand_pat;
-  }
+  // Search captures in order of MVV-LVA
+  for (int i = 0; i < captureList.count; i++) {
+    pickMove(captureList, i);
+    Move move = captureList.moves[i];
 
-  MoveList moveList;
-  pos.getCaptures(pos.mSideToMove, moveList);
-
-  const int DELTA_MARGIN = 200;
-  // 1. Score the moves
-  for (int i = 0; i < moveList.count; i++) {
-    moveList.moves[i].score = scoreMove(moveList.moves[i], pos, -1);
-  }
-
-  // 2. Loop and Sort
-  for (int i = 0; i < moveList.count; i++) {
-    // SORTING: Pick the best move first!
-    pickMove(moveList, i);
-    Move move = moveList.moves[i];
-
-    if (move.score < 1000) break;  // Optimization: Stop searching bad captures
-
-    // 1. Determine value of the piece being captured
-    int capturedPiece = pos.board[move.to];
-    int capturedValue = 0;
-
-    if (capturedPiece != NOPIECE) {
-      // P=100, N=300, B=320, R=500, Q=900
-      static const int values[] = {100, 300, 320, 500, 900, 20000};
-      capturedValue = values[capturedPiece];
+    // OPTIMIZATION: SEE pruning for bad captures
+    // Skip captures that lose material (you'd need to implement SEE)
+    // For now, skip low-scoring captures when far below alpha
+    if (move.score < 100 && standPat + 200 < alpha) {
+      continue;  // Probably a bad capture
     }
 
-    // 2. Promotion handling: Treat promotion as gaining a Queen (900)
-    if (move.promotion != NOPIECE) {
-      capturedValue += 900;
-    }
+    pos.doMove(move);
 
-    // 3. The Check
-    // We strictly use the constants now.
-    // If (My Current Score + The Piece I Get + Safety Margin) < Alpha...
-    // Then this move is hopeless. Prune it.
-    if (stand_pat + capturedValue + DELTA_MARGIN < alpha &&
-        capturedPiece != NOPIECE &&   // Safety: Always search if board state is weird
-        move.promotion == NOPIECE) {  // Safety: Always search promotions
+    // Check legality
+    Color sideJustMoved = (pos.mSideToMove == WHITE) ? BLACK : WHITE;
+    int kingSquare = __builtin_ctzll(pos.pieces[sideJustMoved][KING]);
+
+    if (pos.isSquareAttacked(kingSquare, pos.mSideToMove)) {
+      pos.undoMove(move);
       continue;
     }
 
-    // Now we search ALL interesting moves (Captures, En Passant, Promotions)
-    // without needing slow bitwise checks.
-    pos.doMove(move);
     int score = -quiescence(pos, -beta, -alpha, stoken);
     pos.undoMove(move);
 
@@ -638,15 +628,28 @@ Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
 }
 
 int Engine::evaluate(Position& pos) {
-  // 1. Material + PST
+  // Get current state
+  StateInfo& st = pos.history[pos.gamePly];
+
+  // Material + PSQT is already incremental via pos.posEval.positionScore
   int score = pos.posEval.positionScore;
 
-  // 2. Pawns & Safety
-  score += (evalPawns(pos, WHITE) - evalPawns(pos, BLACK));
-  score += (evalKingSafety(pos, WHITE) - evalKingSafety(pos, BLACK));
+  // Check if we have cached evaluation components
+  if (!st.evalCache.valid) {
+    // Compute and cache all evaluation components
+    st.evalCache.pawnScore[WHITE] = evalPawns(pos, WHITE);
+    st.evalCache.pawnScore[BLACK] = evalPawns(pos, BLACK);
+    st.evalCache.safetyScore[WHITE] = evalKingSafety(pos, WHITE);
+    st.evalCache.safetyScore[BLACK] = evalKingSafety(pos, BLACK);
+    st.evalCache.mobilityScore[WHITE] = evalPieces(pos, WHITE);
+    st.evalCache.mobilityScore[BLACK] = evalPieces(pos, BLACK);
+    st.evalCache.valid = true;
+  }
 
-  // 3. Piece Strategy (NEW)
-  score += (evalPieces(pos, WHITE) - evalPieces(pos, BLACK));
+  // Use cached values
+  score += (st.evalCache.pawnScore[WHITE] - st.evalCache.pawnScore[BLACK]);
+  score += (st.evalCache.safetyScore[WHITE] - st.evalCache.safetyScore[BLACK]);
+  score += (st.evalCache.mobilityScore[WHITE] - st.evalCache.mobilityScore[BLACK]);
 
   return (pos.mSideToMove == WHITE) ? score : -score;
 }

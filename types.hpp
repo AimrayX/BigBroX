@@ -62,6 +62,16 @@ struct MoveList {
   inline void clear() { count = 0; }
 };
 
+// OPTIMIZED: Eval caching structure
+struct EvalCache {
+  bool valid = false;
+  int16_t pawnScore[2];      // [WHITE], [BLACK]
+  int16_t safetyScore[2];    // [WHITE], [BLACK]
+  int16_t mobilityScore[2];  // [WHITE], [BLACK]
+
+  void invalidate() { valid = false; }
+};
+
 struct StateInfo {
   int capturedPiece;
   int movedPiece;
@@ -72,6 +82,7 @@ struct StateInfo {
   int halfMove;
   int psqtScore;
   uint64_t zobristKey;
+  EvalCache evalCache;
 };
 
 struct Eval {

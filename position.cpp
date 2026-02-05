@@ -550,7 +550,11 @@ void Position::doMove(Move m) {
   // Switch side
   mSideToMove = enemy;
 
-  history[gamePly++] = state;
+  history[gamePly] = state;
+
+  history[gamePly].evalCache.invalidate();
+
+  gamePly++;
 }
 
 void Position::undoMove(Move m) {
