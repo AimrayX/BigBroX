@@ -318,6 +318,8 @@ int Engine::scoreMove(const Move& m, Position& pos, int ply) {
 int Engine::quiescence(Position& pos, int alpha, int beta, std::stop_token& stoken) {
   if (stoken.stop_requested()) return 0;
 
+  if (pos.gamePly > 5000) return 0;
+
   if ((nodes & 2047) == 0) {
     auto now = std::chrono::steady_clock::now();
     long long elapsed =

@@ -244,7 +244,7 @@ void Position::getCaptures(Color color, MoveList& moveList) {
   // but we can filter that out inside the loop or just assume pseudo-legal generation
   // handles it if your engine logic requires it.
   // Standard practice: Don't generate king captures.
-  uint64_t enemies = occupancies[enemy];
+  uint64_t enemies = occupancies[enemy] & ~pieces[enemy][KING];
   uint64_t captureMask = enemies;
 
   if (mEnPassentSquare != 0) {
@@ -455,6 +455,12 @@ static const int castling_rights[64] = {
     ~BLACK_OOO, -1, -1, -1, ~(BLACK_OO | BLACK_OOO), -1, -1, ~BLACK_OO};
 
 void Position::doMove(Move m) {
+  if (gamePly >= 5119) {
+    // In a real game, you might return or simply stop recording history.
+    // For testing, printing an error helps you know why it crashed.
+    std::cerr << "CRITICAL: Game too long, history overflow!" << std::endl;
+    exit(1);
+  }
   StateInfo& state = history[gamePly];
   state.castle = mCastleRight;
   state.epSquare = mEnPassentSquare;

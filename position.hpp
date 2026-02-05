@@ -31,7 +31,7 @@ class Position {
 
   uint64_t getHash() const { return mHash; }
 
-  StateInfo history[1024];
+  StateInfo history[5120];
   int gamePly = 0;
 
   Eval posEval;
