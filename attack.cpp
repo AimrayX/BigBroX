@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "types.hpp"
+#include "magicBitboards.hpp"
 
 void attack::computeKnightAttacks() {
   uint64_t mask = 0ULL;
@@ -266,7 +267,7 @@ uint64_t attack::getRookAttacks(int square, uint64_t occupancy) {
 }
 
 uint64_t attack::getQueenAttacks(int square, uint64_t occupancy) {
-  return (attack::getRookAttacks(square, occupancy) | attack::getBishopAttacks(square, occupancy));
+  return (get_rook_attacks(square, occupancy) | get_bishop_attacks(square, occupancy));
 }
 
 uint64_t attack::getPawnAttacks(int square, Color color, uint64_t occupancy) {

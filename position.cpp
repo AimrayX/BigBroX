@@ -280,12 +280,12 @@ int Position::setStartingPosition(std::string startingPosition) {
 uint64_t Position::attackGeneration(int square, int type, Color color) {
   uint64_t attack = 0;
   if (type == ROOK) {
-    attack = attack::getRookAttacks(square, occupancies[2]);
+    attack = get_rook_attacks(square, occupancies[2]);
   } else if (type == BISHOP) {
-    attack = attack::getBishopAttacks(square, occupancies[2]);
+    attack = get_bishop_attacks(square, occupancies[2]);
   } else if (type == QUEEN) {
-    attack = (attack::getRookAttacks(square, occupancies[2]) |
-              attack::getBishopAttacks(square, occupancies[2]));
+    attack = (get_rook_attacks(square, occupancies[2]) |
+              get_bishop_attacks(square, occupancies[2]));
   } else if (type == KING) {
     attack = attack::kingAttacks[square];
   } else if (type == KNIGHT) {
@@ -564,12 +564,12 @@ bool Position::isSquareAttacked(int square, Color sideAttacking) {
   }
 
   uint64_t bishopsQueens = pieces[sideAttacking][BISHOP] | pieces[sideAttacking][QUEEN];
-  if (attack::getBishopAttacks(square, occupancies[2]) & bishopsQueens) {
+  if (get_bishop_attacks(square, occupancies[2]) & bishopsQueens) {
     return true;
   }
 
   uint64_t rooksQueens = pieces[sideAttacking][ROOK] | pieces[sideAttacking][QUEEN];
-  if (attack::getRookAttacks(square, occupancies[2]) & rooksQueens) {
+  if (get_rook_attacks(square, occupancies[2]) & rooksQueens) {
     return true;
   }
 

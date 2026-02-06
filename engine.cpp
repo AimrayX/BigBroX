@@ -6,6 +6,7 @@
 #include "attack.hpp"
 #include "types.hpp"
 #include "utils.hpp"
+#include "magicBitboards.hpp"
 
 const int INF = 1000000;
 
@@ -160,7 +161,7 @@ int evalPieces(const Position& pos, Color side) {
     int sq = __builtin_ctzll(bishops);
 
     // Mobility: Count attacked squares
-    uint64_t attacks = attack::getBishopAttacks(sq, occupancy);
+    uint64_t attacks = get_bishop_attacks(sq, occupancy);
     score += __builtin_popcountll(attacks) * BISHOP_MOBILITY;
 
     bishops &= (bishops - 1);
@@ -186,7 +187,7 @@ int evalPieces(const Position& pos, Color side) {
     int rank = sq / 8;
 
     // Mobility
-    uint64_t attacks = attack::getRookAttacks(sq, occupancy);
+    uint64_t attacks = get_rook_attacks(sq, occupancy);
     score += __builtin_popcountll(attacks) * ROOK_MOBILITY;
 
     // Static Open File Bonus (Reduced, but still useful)
