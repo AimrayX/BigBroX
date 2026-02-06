@@ -11,7 +11,6 @@ const int INF = 1000000;
 
 // Add to top of engine.cpp
 const uint64_t FILE_A = 0x0101010101010101ULL;
-const uint64_t FILE_H = 0x8080808080808080ULL;
 
 // Precompute masks for passed pawn checks
 uint64_t PASSED_MASK[2][64];  // [Color][Square]
@@ -322,7 +321,7 @@ int Engine::quiescence(Position& pos, int alpha, int beta, std::stop_token& stok
   // OPTIMIZATION: Stand-pat using only material/PSQT (very cheap!)
   int standPat = pos.posEval.positionScore;
   standPat = (pos.mSideToMove == WHITE) ? standPat : -standPat;
-  
+
   // OPTIMIZATION: Delta pruning
   // If we're so far behind that even capturing a queen can't help, give up
   const int BIG_DELTA = 925;  // Queen value + margin
@@ -410,6 +409,8 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
 
   if (mStop) return 0;
 
+  bool inCheck = pos.isCheck();
+
   int ply = mCurrentDepth - depth;
   pvLength[ply] = ply;
 
@@ -422,7 +423,7 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
   // --- TT PROBE ---
   int ttScore;
   Move ttMove = Move::null();
-  
+
   if (tt.probe(pos.getHash(), depth, ply, alpha, beta, ttScore, ttMove)) {
     if (ply > 0) return ttScore;
   }
@@ -437,13 +438,42 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
     return quiescence(pos, alpha, beta, stoken);
   }
 
+  // --- NULL MOVE PRUNING ---
+  // Prereqs:
+  // 1. We are not in the root (depth > 0)
+  // 2. We have enough depth to make it worth it (depth >= 3)
+  // 3. We are NOT in check (null move while in check is illegal)
+  // 4. We have major pieces (avoids zugzwang in pure pawn endgames)
+  if (depth >= 3 && !pos.isCheck() && ply > 0 && pos.hasNonPawnMaterial(pos.mSideToMove)) {
+    // Save current state
+    int R = 2;  // Reduction amount (standard is 2, sometimes 3 for very high depth)
+
+    pos.doNullMove();  // You need to implement this in Position class
+
+    // Search with a "Null Window" and reduced depth
+    // We pass -beta + 1 and -beta to verify if opponent can improve
+    int score = -negaMax(pos, depth - 1 - R, -beta, -beta + 1, stoken);
+
+    pos.undoNullMove();  // Restore state
+
+    if (stoken.stop_requested()) return 0;
+
+    // Cutoff: If doing nothing is still too good for us (>= beta),
+    // then we don't need to waste time searching real moves.
+    if (score >= beta) {
+      // Don't return mate scores from null move (unreliable)
+      if (score >= 20000) score = beta;
+      return score;
+    }
+  }
+
   MoveList moveList;
   pos.getMoves(pos.mSideToMove, moveList);
 
   // OPTIMIZATION: Better move ordering
   for (int i = 0; i < moveList.count; i++) {
     Move& m = moveList.moves[i];
-    
+
     // 1. TT move gets highest priority
     if (ttMove.from != 0 && m.from == ttMove.from && m.to == ttMove.to) {
       m.score = 2000000;
@@ -483,6 +513,8 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
   for (int i = 0; i < moveList.count; i++) {
     pickMove(moveList, i);
 
+    bool isCapture = (pos.board[moveList.moves[i].to] != NOPIECE);
+
     pos.doMove(moveList.moves[i]);
 
     Color sideJustMoved = (pos.mSideToMove == WHITE) ? BLACK : WHITE;
@@ -495,7 +527,51 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
 
     movesSearched++;
 
-    int score = -negaMax(pos, depth - 1, -beta, -alpha, stoken);
+    int score;
+
+    if (movesSearched == 1) {
+      // 1. PV Move (First move): Search with full window
+      score = -negaMax(pos, depth - 1, -beta, -alpha, stoken);
+    } else {
+      // --- LATE MOVE REDUCTION (LMR) ---
+      bool doReduction = false;
+      int reduction = 0;
+
+      // Conditions to reduce:
+      // 1. Not a capture/promotion (score check: captures are > 1,000,000 in your ordering)
+      // 2. We are searching late enough (movesSearched >= 4)
+      // 3. We have enough depth (depth >= 3)
+      // 4. The move does NOT give check (!pos.isCheck())
+      if (movesSearched >= 4 && depth >= 3 && !isCapture &&
+          moveList.moves[i].promotion == NOPIECE && !pos.isCheck() && !inCheck) {
+        doReduction = true;
+
+        // Formula: Reduce by 1, or by 2 for very late moves
+        reduction = 1;
+        if (movesSearched > 8) reduction = 2;
+
+        // Safety: Don't reduce below depth 1
+        if (depth - 1 - reduction < 1) reduction = depth - 2;
+      }
+
+      if (doReduction) {
+        // Search with REDUCED depth and NULL window
+        score = -negaMax(pos, depth - 1 - reduction, -alpha - 1, -alpha, stoken);
+
+        if (score > alpha) {
+          score = -negaMax(pos, depth - 1, -alpha - 1, -alpha, stoken);
+        }
+
+      } else {
+        // Hack to trigger full search below if we didn't reduce
+        score = -negaMax(pos, depth - 1, -alpha - 1, -alpha, stoken);
+      }
+
+      if (score > alpha && score < beta) {
+        score = -negaMax(pos, depth - 1, -beta, -alpha, stoken);
+      }
+    }
+
     pos.undoMove(moveList.moves[i]);
 
     if (stoken.stop_requested()) return 0;
@@ -503,13 +579,13 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
     if (score > bestScore) {
       bestScore = score;
       bestMove = moveList.moves[i];
-      
+
       pvTable[ply][ply] = moveList.moves[i];
 
       for (int j = ply + 1; j < pvLength[ply + 1]; j++) {
         pvTable[ply][j] = pvTable[ply + 1][j];
       }
-      
+
       pvLength[ply] = (pvLength[ply + 1] > ply + 1) ? pvLength[ply + 1] : (ply + 1);
 
       if (score > alpha) {
@@ -551,7 +627,7 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
       return 0;
     }
   }
-  
+
   TTFlag flag = TT_ALPHA;
   if (bestScore > originalAlpha) {
     flag = TT_EXACT;
@@ -598,7 +674,7 @@ Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
     std::vector<Move> pvLine = getPV(pos, depth);
 
     // Print PV
-    std::cout << "info depth " << depth << " score cp " << score << " pv";
+    std::cout << "info depth " << depth << " score cp " << score << " nodes " << nodes << " pv";
 
     for (const Move& m : pvLine) {
       std::cout << " " << util::moveToString(m);

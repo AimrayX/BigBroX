@@ -6,9 +6,9 @@
 #include <sstream>
 
 #include "attack.hpp"
+#include "magicBitboards.hpp"
 #include "types.hpp"
 #include "utils.hpp"
-#include "magicBitboards.hpp"
 
 const uint64_t NOT_A_FILE = 0xFEFEFEFEFEFEFEFEULL;
 const uint64_t NOT_H_FILE = 0x7F7F7F7F7F7F7F7FULL;
@@ -68,8 +68,19 @@ bool Position::isRepetition() {
   return false;
 }
 
+bool Position::hasNonPawnMaterial(Color side) const {
+  return (pieces[side][KNIGHT] | pieces[side][BISHOP] | pieces[side][ROOK] | pieces[side][QUEEN]) !=
+         0;
+}
+
 int Position::getPieceValue(int piece, int square, Color color) {
   return PST_CACHE[color][piece][square];
+}
+
+bool Position::isCheck() {
+    int kingSq = __builtin_ctzll(pieces[mSideToMove][KING]);
+    Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
+    return isSquareAttacked(kingSq, enemy);
 }
 
 int Position::setStartingPosition(std::string startingPosition) {
@@ -427,7 +438,9 @@ void Position::getCaptures(Color color, MoveList& moveList) {
   while (attacker) {
     int from = __builtin_ctzll(attacker);
 
-    uint64_t attacks = (get_rook_attacks(from, occupancies[2]) | get_bishop_attacks(from, occupancies[2])) & enemies;
+    uint64_t attacks =
+        (get_rook_attacks(from, occupancies[2]) | get_bishop_attacks(from, occupancies[2])) &
+        enemies;
 
     while (attacks) {
       int to = __builtin_ctzll(attacks);
@@ -661,6 +674,35 @@ void Position::doMove(Move m) {
   gamePly++;
 }
 
+void Position::doNullMove() {
+  StateInfo state;
+  state.castle = mCastleRight;
+  state.epSquare = mEnPassentSquare;
+  state.halfMove = mHalfMove;
+  state.psqtScore = posEval.positionScore;
+  state.zobristKey = mHash;
+  state.movedPiece = NOPIECE;
+  state.capturedPiece = NOPIECE;
+
+  Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
+
+  if (mEnPassentSquare) {
+    mHash ^= Zobrist::enPassantKeys[__builtin_ctzll(mEnPassentSquare)];
+  }
+  mHash ^= Zobrist::sideKey;
+
+  mEnPassentSquare = 0;
+  mSideToMove = enemy;
+
+  // Update 50-move rule (Null move counts as a ply without pawn move/capture)
+  mHalfMove++;
+
+  history[gamePly] = state;
+  history[gamePly].evalCache.invalidate();
+
+  gamePly++;
+}
+
 void Position::undoMove(Move m) {
   gamePly--;
   // Restore state from history
@@ -745,6 +787,19 @@ void Position::undoMove(Move m) {
       board[m.to] = state.capturedPiece;
     }
   }
+}
+
+void Position::undoNullMove() {
+  gamePly--;
+  const StateInfo& state = history[gamePly];
+
+  mCastleRight = state.castle;
+  mEnPassentSquare = state.epSquare;
+  mHalfMove = state.halfMove;
+  mHash = state.zobristKey;
+  posEval.positionScore = state.psqtScore;
+
+  mSideToMove = (mSideToMove == WHITE) ? BLACK : WHITE;
 }
 
 void Position::getMoves(Color color, MoveList& moveList) {

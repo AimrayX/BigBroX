@@ -42,10 +42,14 @@ class Position {
   int getPieceValue(int piece, int square, Color color);
   void doMove(Move m);
   void undoMove(Move m);
+  void doNullMove();
+  void undoNullMove();
   void getMoves(Color color, MoveList& moveList);
   void getCaptures(Color color, MoveList& moveList);
   bool isSquareAttacked(int square, Color sideAttacking);
   bool isRepetition();
+  bool isCheck();
+  bool hasNonPawnMaterial(Color side) const;
   inline void addPawnCaptureMove(int from, int to, MoveList& moveList);
 
   void printBoard();
