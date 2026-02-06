@@ -9,9 +9,9 @@
 #include <unordered_map>
 
 #include "attack.hpp"
+#include "magicBitboards.hpp"
 #include "types.hpp"
 #include "utils.hpp"
-#include "magicBitboards.hpp"
 
 std::string UCIHandler::getStartingPosition(std::string commandLine) {
   std::string fenPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -46,6 +46,9 @@ int UCIHandler::loop() {
       {"stop", UCICommand::Stop},
       {"quit", UCICommand::Quit}};
 
+  init_magic_bitboards();
+  attack::init();
+
   std::string line;
   std::string token;
   while (std::getline(std::cin, line)) {
@@ -64,13 +67,12 @@ int UCIHandler::loop() {
             break;
 
           case UCICommand::IsReady:
-            init_magic_bitboards();
-            attack::init();
             std::cout << "readyok" << std::endl;
             break;
 
           case UCICommand::UCINewGame:
             game.engine.tt.clear();
+            sleep(1);
             break;
 
           case UCICommand::SetOption:
