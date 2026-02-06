@@ -429,10 +429,10 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
   }
 
   // OPTIMIZATION: Prefetch next TT entry (commented out for now)
-  // if (depth > 1 && ttMove.from != 0) {
-  //   uint64_t childKey = computeChildKey(pos, ttMove);
-  //   __builtin_prefetch(&tt.buckets[childKey & (tt.numBuckets - 1)]);
-  // }
+  if (depth > 1 && ttMove.from != 0) {
+    uint64_t childKey = pos.predictChildHash(ttMove);
+    __builtin_prefetch(&tt.buckets[childKey & (tt.numBuckets - 1)]);
+  }
 
   if (depth == 0) {
     return quiescence(pos, alpha, beta, stoken);

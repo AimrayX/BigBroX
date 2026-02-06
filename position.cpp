@@ -56,6 +56,62 @@ void init() {
 }
 }  // namespace Zobrist
 
+uint64_t Position::predictChildHash(Move m) {
+  uint64_t key = mHash;
+  key ^= Zobrist::sideKey;
+
+  if (mEnPassentSquare) key ^= Zobrist::enPassantKeys[__builtin_ctzll(mEnPassentSquare)];
+
+  key ^= Zobrist::castleKeys[mCastleRight];
+
+  // Remove piece from source
+  int piece = board[m.from];
+  key ^= Zobrist::pieceKeys[mSideToMove][piece][m.from];
+
+  // Remove captured piece
+  if (board[m.to] != NOPIECE) {
+    Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
+    key ^= Zobrist::pieceKeys[enemy][board[m.to]][m.to];
+  }
+
+  // Add piece to destination (Handle promotion)
+  if (m.promotion != NOPIECE) {
+    key ^= Zobrist::pieceKeys[mSideToMove][m.promotion][m.to];
+  } else {
+    key ^= Zobrist::pieceKeys[mSideToMove][piece][m.to];
+  }
+
+  // Handle En Passant Capture
+  if (piece == PAWN && (1ULL << m.to) == mEnPassentSquare && mEnPassentSquare != 0) {
+    Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
+    int captureSq = m.to + ((mSideToMove == WHITE) ? -8 : 8);
+    key ^= Zobrist::pieceKeys[enemy][PAWN][captureSq];
+  }
+
+  // Handle Castling (Rook update)
+  if (piece == KING && abs((int)m.to - (int)m.from) == 2) {
+    int castleDelta = (int)m.to - (int)m.from;
+    int rookFrom = (castleDelta == 2) ? (m.to + 1) : (m.to - 2);
+    int rookDest = (castleDelta == 2) ? (m.to - 1) : (m.to + 1);
+    key ^= Zobrist::pieceKeys[mSideToMove][ROOK][rookFrom];
+    key ^= Zobrist::pieceKeys[mSideToMove][ROOK][rookDest];
+  }
+
+  // Update Castle Rights Hash
+  int newCastle = mCastleRight;
+  newCastle &= castling_rights[m.from];  // NOW ACCESSIBLE!
+  newCastle &= castling_rights[m.to];    // NOW ACCESSIBLE!
+  key ^= Zobrist::castleKeys[newCastle];
+
+  // Update En Passant Hash
+  if (piece == PAWN && abs((int)m.to - (int)m.from) == 16) {
+    int epSq = (m.from + m.to) / 2;
+    key ^= Zobrist::enPassantKeys[epSq];
+  }
+
+  return key;
+}
+
 bool Position::isRepetition() {
   int n = gamePly;
 
@@ -78,9 +134,9 @@ int Position::getPieceValue(int piece, int square, Color color) {
 }
 
 bool Position::isCheck() {
-    int kingSq = __builtin_ctzll(pieces[mSideToMove][KING]);
-    Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
-    return isSquareAttacked(kingSq, enemy);
+  int kingSq = __builtin_ctzll(pieces[mSideToMove][KING]);
+  Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
+  return isSquareAttacked(kingSq, enemy);
 }
 
 int Position::setStartingPosition(std::string startingPosition) {
@@ -519,17 +575,6 @@ bool Position::isSquareAttacked(int square, Color sideAttacking) {
 
   return false;
 }
-
-// Full castling mask array
-// Indices: 0=a1, 7=h1, 56=a8, 63=h8
-static const int castling_rights[64] = {
-    // Rank 1 (White)
-    ~WHITE_OOO, -1, -1, -1, ~(WHITE_OO | WHITE_OOO), -1, -1, ~WHITE_OO,
-    // Rank 2-7 (Empty - no castling rights change)
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    // Rank 8 (Black)
-    ~BLACK_OOO, -1, -1, -1, ~(BLACK_OO | BLACK_OOO), -1, -1, ~BLACK_OO};
 
 void Position::doMove(Move m) {
   StateInfo state;

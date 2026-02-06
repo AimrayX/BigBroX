@@ -22,6 +22,9 @@ struct alignas(64) TTBucket {
 
 class TranspositionTable {
  public:
+  std::vector<TTBucket> buckets;
+  size_t numBuckets;
+
   TranspositionTable(int sizeInMB);
   ~TranspositionTable();
 
@@ -34,8 +37,7 @@ class TranspositionTable {
   Move probeMove(uint64_t key);
 
  private:
-  std::vector<TTBucket> buckets;
-  size_t numBuckets;  // Number of entries
+   // Number of entries
   int scoreToTT(int score, int ply);
   int scoreFromTT(int score, int ply);
 };

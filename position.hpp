@@ -11,8 +11,6 @@
 class Position {
  private:
  public:
-  std::string mStartingPosition;
-
   uint32_t mNumberOfWhitePieces;
   uint32_t mNumberOfBlackPieces;
 
@@ -31,10 +29,25 @@ class Position {
 
   uint64_t getHash() const { return mHash; }
 
-  StateInfo history[5120];
   int gamePly = 0;
 
   Eval posEval;
+  uint64_t mAttacksP = 0ULL;
+
+  // Full castling mask array
+  // Indices: 0=a1, 7=h1, 56=a8, 63=h8
+  static constexpr int castling_rights[64] = {
+      // Rank 1 (White)
+      ~WHITE_OOO, -1, -1, -1, ~(WHITE_OO | WHITE_OOO), -1, -1, ~WHITE_OO,
+      // Rank 2-7 (Empty - no castling rights change)
+      -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+      -1, -1,
+      // Rank 8 (Black)
+      ~BLACK_OOO, -1, -1, -1, ~(BLACK_OO | BLACK_OOO), -1, -1, ~BLACK_OO};
+
+  std::string mStartingPosition;
+  StateInfo history[5120];
 
   uint64_t attackGeneration(int square, int type, Color color);
   uint64_t getPseudoLegalMoves(int piece, int type, Color color);
@@ -51,10 +64,9 @@ class Position {
   bool isCheck();
   bool hasNonPawnMaterial(Color side) const;
   inline void addPawnCaptureMove(int from, int to, MoveList& moveList);
+  uint64_t predictChildHash(Move m);
 
   void printBoard();
-
-  uint64_t mAttacksP = 0ULL;
 
   Position();
   ~Position();
