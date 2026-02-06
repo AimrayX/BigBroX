@@ -6,9 +6,10 @@
 #include <sstream>
 
 #include "attack.hpp"
-#include "magicBitboards.hpp"
 #include "types.hpp"
 #include "utils.hpp"
+#include "magicBitboards.hpp"
+
 const uint64_t NOT_A_FILE = 0xFEFEFEFEFEFEFEFEULL;
 const uint64_t NOT_H_FILE = 0x7F7F7F7F7F7F7F7FULL;
 
@@ -244,7 +245,7 @@ void Position::getCaptures(Color color, MoveList& moveList) {
   // but we can filter that out inside the loop or just assume pseudo-legal generation
   // handles it if your engine logic requires it.
   // Standard practice: Don't generate king captures.
-  uint64_t enemies = occupancies[enemy] & ~pieces[enemy][KING];
+  uint64_t enemies = occupancies[enemy];
   uint64_t captureMask = enemies;
 
   if (mEnPassentSquare != 0) {
@@ -310,79 +311,142 @@ void Position::getCaptures(Color color, MoveList& moveList) {
     }
   }
 
-  static const int victimScores[] = {100, 300, 310, 500, 900, 20000};
-  static const int aggressorScores[] = {100, 300, 310, 500, 900, 20000};
+  uint64_t attacker = pieces[color][KING];
+  while (attacker) {
+    int from = __builtin_ctzll(attacker);
 
-  uint64_t knights = pieces[color][KNIGHT];
-  while (knights) {
-    int from = __builtin_ctzll(knights);
+    uint64_t attacks = attack::kingAttacks[from] & enemies;
+
+    while (attacks) {
+      int to = __builtin_ctzll(attacks);
+      int victim = board[to];
+
+      if (victim != KING) {
+        int score = 0;
+        if (victim != NOPIECE) {
+          static const int victimScores[] = {100, 300, 310, 500, 900, 20000};
+          static const int aggressorScores[] = {100, 300, 310, 500, 900, 20000};
+          score = victimScores[victim] - (aggressorScores[ROOK] / 10) + 10000;
+        }
+        moveList.add({(uint8_t)from, (uint8_t)to, NOPIECE, 0, 0}, score);
+      }
+
+      attacks &= (attacks - 1);
+    }
+
+    attacker &= (attacker - 1);
+  }
+
+  attacker = pieces[color][KNIGHT];
+  while (attacker) {
+    int from = __builtin_ctzll(attacker);
+
     uint64_t attacks = attack::knightAttacks[from] & enemies;
+
     while (attacks) {
       int to = __builtin_ctzll(attacks);
       int victim = board[to];
-      int score =
-          (victim != NOPIECE) ? (victimScores[victim] - (aggressorScores[KNIGHT] / 10) + 10000) : 0;
-      moveList.add({(uint8_t)from, (uint8_t)to, NOPIECE, 0, 0}, score);
+
+      if (victim != KING) {
+        int score = 0;
+        if (victim != NOPIECE) {
+          static const int victimScores[] = {100, 300, 310, 500, 900, 20000};
+          static const int aggressorScores[] = {100, 300, 310, 500, 900, 20000};
+          score = victimScores[victim] - (aggressorScores[ROOK] / 10) + 10000;
+        }
+        moveList.add({(uint8_t)from, (uint8_t)to, NOPIECE, 0, 0}, score);
+      }
+
       attacks &= (attacks - 1);
     }
-    knights &= (knights - 1);
+
+    attacker &= (attacker - 1);
   }
 
-  uint64_t bishops = pieces[color][BISHOP];
-  while (bishops) {
-    int from = __builtin_ctzll(bishops);
-    uint64_t attacks = MagicBitboards::getBishopAttacks(from, occupancies[2]) & enemies;
+  attacker = pieces[color][ROOK];
+  while (attacker) {
+    int from = __builtin_ctzll(attacker);
+
+    // OPTIMIZATION: Get attacks and IMMEDIATELY mask with captureMask
+    // This prevents generating quiet moves and then filtering them later.
+    uint64_t attacks = get_rook_attacks(from, occupancies[2]) & enemies;
+
     while (attacks) {
       int to = __builtin_ctzll(attacks);
       int victim = board[to];
-      int score =
-          (victim != NOPIECE) ? (victimScores[victim] - (aggressorScores[BISHOP] / 10) + 10000) : 0;
-      moveList.add({(uint8_t)from, (uint8_t)to, NOPIECE, 0, 0}, score);
+
+      // Note: King capture check should theoretically not be needed if move gen is pseudo-legal
+      // and previous moves were legal, but we keep safety if needed.
+      if (victim != KING) {
+        int score = 0;
+        if (victim != NOPIECE) {
+          static const int victimScores[] = {100, 300, 310, 500, 900, 20000};
+          static const int aggressorScores[] = {100, 300, 310, 500, 900, 20000};
+          score = victimScores[victim] - (aggressorScores[ROOK] / 10) + 10000;
+        }
+        moveList.add({(uint8_t)from, (uint8_t)to, NOPIECE, 0, 0}, score);
+      }
+
       attacks &= (attacks - 1);
     }
-    bishops &= (bishops - 1);
+
+    attacker &= (attacker - 1);
   }
 
-  uint64_t rooks = pieces[color][ROOK];
-  while (rooks) {
-    int from = __builtin_ctzll(rooks);
-    uint64_t attacks = MagicBitboards::getRookAttacks(from, occupancies[2]) & enemies;
+  attacker = pieces[color][BISHOP];
+  while (attacker) {
+    int from = __builtin_ctzll(attacker);
+
+    // OPTIMIZATION: Get attacks and IMMEDIATELY mask with captureMask
+    // This prevents generating quiet moves and then filtering them later.
+    uint64_t attacks = get_bishop_attacks(from, occupancies[2]) & enemies;
+
     while (attacks) {
       int to = __builtin_ctzll(attacks);
       int victim = board[to];
-      int score =
-          (victim != NOPIECE) ? (victimScores[victim] - (aggressorScores[ROOK] / 10) + 10000) : 0;
-      moveList.add({(uint8_t)from, (uint8_t)to, NOPIECE, 0, 0}, score);
+
+      // Note: King capture check should theoretically not be needed if move gen is pseudo-legal
+      // and previous moves were legal, but we keep safety if needed.
+      if (victim != KING) {
+        int score = 0;
+        if (victim != NOPIECE) {
+          static const int victimScores[] = {100, 300, 310, 500, 900, 20000};
+          static const int aggressorScores[] = {100, 300, 310, 500, 900, 20000};
+          score = victimScores[victim] - (aggressorScores[ROOK] / 10) + 10000;
+        }
+        moveList.add({(uint8_t)from, (uint8_t)to, NOPIECE, 0, 0}, score);
+      }
+
       attacks &= (attacks - 1);
     }
-    rooks &= (rooks - 1);
+
+    attacker &= (attacker - 1);
   }
 
-  uint64_t queens = pieces[color][QUEEN];
-  while (queens) {
-    int from = __builtin_ctzll(queens);
-    uint64_t attacks = (MagicBitboards::getBishopAttacks(from, occupancies[2]) |
-                        MagicBitboards::getRookAttacks(from, occupancies[2])) &
-                       enemies;
+  attacker = pieces[color][QUEEN];
+  while (attacker) {
+    int from = __builtin_ctzll(attacker);
+
+    uint64_t attacks = (get_rook_attacks(from, occupancies[2]) | get_bishop_attacks(from, occupancies[2])) & enemies;
+
     while (attacks) {
       int to = __builtin_ctzll(attacks);
       int victim = board[to];
-      int score =
-          (victim != NOPIECE) ? (victimScores[victim] - (aggressorScores[QUEEN] / 10) + 10000) : 0;
-      moveList.add({(uint8_t)from, (uint8_t)to, NOPIECE, 0, 0}, score);
+
+      if (victim != KING) {
+        int score = 0;
+        if (victim != NOPIECE) {
+          static const int victimScores[] = {100, 300, 310, 500, 900, 20000};
+          static const int aggressorScores[] = {100, 300, 310, 500, 900, 20000};
+          score = victimScores[victim] - (aggressorScores[ROOK] / 10) + 10000;
+        }
+        moveList.add({(uint8_t)from, (uint8_t)to, NOPIECE, 0, 0}, score);
+      }
+
       attacks &= (attacks - 1);
     }
-    queens &= (queens - 1);
-  }
 
-  int kingSq = __builtin_ctzll(pieces[color][KING]);
-  uint64_t kAttacks = attack::kingAttacks[kingSq] & enemies;
-  while (kAttacks) {
-    int to = __builtin_ctzll(kAttacks);
-    int victim = board[to];
-    int score = (victimScores[victim] - (aggressorScores[KING] / 10) + 10000);
-    moveList.add({(uint8_t)kingSq, (uint8_t)to, NOPIECE, 0, 0}, score);
-    kAttacks &= (kAttacks - 1);
+    attacker &= (attacker - 1);
   }
 }
 
@@ -455,13 +519,7 @@ static const int castling_rights[64] = {
     ~BLACK_OOO, -1, -1, -1, ~(BLACK_OO | BLACK_OOO), -1, -1, ~BLACK_OO};
 
 void Position::doMove(Move m) {
-  if (gamePly >= 5119) {
-    // In a real game, you might return or simply stop recording history.
-    // For testing, printing an error helps you know why it crashed.
-    std::cerr << "CRITICAL: Game too long, history overflow!" << std::endl;
-    exit(1);
-  }
-  StateInfo& state = history[gamePly];
+  StateInfo state;
   state.castle = mCastleRight;
   state.epSquare = mEnPassentSquare;
   state.halfMove = mHalfMove;
@@ -469,8 +527,6 @@ void Position::doMove(Move m) {
   state.zobristKey = mHash;
   state.movedPiece = board[m.from];
   state.capturedPiece = NOPIECE;
-
-  state.evalCache.invalidate();
 
   Color enemy = (mSideToMove == WHITE) ? BLACK : WHITE;
 
@@ -597,6 +653,10 @@ void Position::doMove(Move m) {
 
   // Switch side
   mSideToMove = enemy;
+
+  history[gamePly] = state;
+
+  history[gamePly].evalCache.invalidate();
 
   gamePly++;
 }

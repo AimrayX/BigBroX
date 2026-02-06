@@ -2,7 +2,6 @@
 
 #include <cstdint>
 
-#include "magicBitboards.hpp"
 #include "types.hpp"
 
 void attack::computeKnightAttacks() {
@@ -166,16 +165,108 @@ void attack::initPawnAttacks() {
   }
 }
 
-uint64_t attack::getRookAttacks(int square, uint64_t occupancy) {
-  return MagicBitboards::getRookAttacks(square, occupancy);
+uint64_t attack::getBishopAttacks(int square, uint64_t occupancy) {
+  uint64_t attacks = 0ULL;
+
+  uint64_t ne_ray = Rays[4][square];
+  uint64_t ne_blockers = ne_ray & occupancy;
+
+  if (ne_blockers == 0) {
+    attacks |= ne_ray;
+  } else {
+    int blocker = __builtin_ctzll(ne_blockers);
+    attacks |= ne_ray ^ Rays[4][blocker];
+    attacks |= (1ULL << blocker);
+  }
+
+  uint64_t nw_ray = Rays[5][square];
+  uint64_t nw_blockers = nw_ray & occupancy;
+
+  if (nw_blockers == 0) {
+    attacks |= nw_ray;
+  } else {
+    int blocker = __builtin_ctzll(nw_blockers);
+    attacks |= nw_ray ^ Rays[5][blocker];
+    attacks |= (1ULL << blocker);
+  }
+
+  uint64_t se_ray = Rays[6][square];
+  uint64_t se_blockers = se_ray & occupancy;
+
+  if (se_blockers == 0) {
+    attacks |= se_ray;
+  } else {
+    int blocker = 63 - __builtin_clzll(se_blockers);
+    attacks |= se_ray ^ Rays[6][blocker];
+    attacks |= (1ULL << blocker);
+  }
+
+  uint64_t sw_ray = Rays[7][square];
+  uint64_t sw_blockers = sw_ray & occupancy;
+
+  if (sw_blockers == 0) {
+    attacks |= sw_ray;
+  } else {
+    int blocker = 63 - __builtin_clzll(sw_blockers);
+    attacks |= sw_ray ^ Rays[7][blocker];
+    attacks |= (1ULL << blocker);
+  }
+
+  return attacks;
 }
 
-uint64_t attack::getBishopAttacks(int square, uint64_t occupancy) {
-  return MagicBitboards::getBishopAttacks(square, occupancy);
+uint64_t attack::getRookAttacks(int square, uint64_t occupancy) {
+  uint64_t attacks = 0ULL;
+
+  uint64_t n_ray = Rays[0][square];
+  uint64_t n_blockers = n_ray & occupancy;
+
+  if (n_blockers == 0) {
+    attacks |= n_ray;
+  } else {
+    int blocker = __builtin_ctzll(n_blockers);
+    attacks |= n_ray ^ Rays[0][blocker];
+    attacks |= (1ULL << blocker);
+  }
+
+  uint64_t e_ray = Rays[2][square];
+  uint64_t e_blockers = e_ray & occupancy;
+
+  if (e_blockers == 0) {
+    attacks |= e_ray;
+  } else {
+    int blocker = __builtin_ctzll(e_blockers);
+    attacks |= e_ray ^ Rays[2][blocker];
+    attacks |= (1ULL << blocker);
+  }
+
+  uint64_t s_ray = Rays[1][square];
+  uint64_t s_blockers = s_ray & occupancy;
+
+  if (s_blockers == 0) {
+    attacks |= s_ray;
+  } else {
+    int blocker = 63 - __builtin_clzll(s_blockers);
+    attacks |= s_ray ^ Rays[1][blocker];
+    attacks |= (1ULL << blocker);
+  }
+
+  uint64_t w_ray = Rays[3][square];
+  uint64_t w_blockers = w_ray & occupancy;
+
+  if (w_blockers == 0) {
+    attacks |= w_ray;
+  } else {
+    int blocker = 63 - __builtin_clzll(w_blockers);
+    attacks |= w_ray ^ Rays[3][blocker];
+    attacks |= (1ULL << blocker);
+  }
+
+  return attacks;
 }
 
 uint64_t attack::getQueenAttacks(int square, uint64_t occupancy) {
-  return MagicBitboards::getQueenAttacks(square, occupancy);
+  return (attack::getRookAttacks(square, occupancy) | attack::getBishopAttacks(square, occupancy));
 }
 
 uint64_t attack::getPawnAttacks(int square, Color color, uint64_t occupancy) {
@@ -218,5 +309,4 @@ void attack::init() {
   computeKingAttacks();
   initRays();
   initPawnAttacks();
-  MagicBitboards::init();
 }

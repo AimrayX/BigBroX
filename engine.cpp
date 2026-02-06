@@ -211,18 +211,6 @@ int evalPieces(const Position& pos, Color side) {
     rooks &= (rooks - 1);
   }
 
-  // --- QUEENS ---
-  // (Optional: Queen mobility is expensive/noisy, but good for "centralization")
-  /*
-  uint64_t queens = pos.pieces[side][QUEEN];
-  while (queens) {
-      int sq = __builtin_ctzll(queens);
-      uint64_t attacks = attack::getQueenAttacks(sq, occupancy);
-      score += __builtin_popcountll(attacks) * QUEEN_MOBILITY;
-      queens &= (queens - 1);
-  }
-  */
-
   return score;
 }
 

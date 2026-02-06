@@ -1,4 +1,4 @@
 uci
 isready
 position fen 1n6/ppn1rp1R/1k1pp1p1/3p2P1/3P1P2/2B1P3/PPP1B3/1K6 w - - 5 27
-go depth 7
+go movetime 10000

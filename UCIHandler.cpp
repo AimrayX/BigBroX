@@ -11,6 +11,7 @@
 #include "attack.hpp"
 #include "types.hpp"
 #include "utils.hpp"
+#include "magicBitboards.hpp"
 
 std::string UCIHandler::getStartingPosition(std::string commandLine) {
   std::string fenPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -63,6 +64,7 @@ int UCIHandler::loop() {
             break;
 
           case UCICommand::IsReady:
+            init_magic_bitboards();
             attack::init();
             std::cout << "readyok" << std::endl;
             break;
