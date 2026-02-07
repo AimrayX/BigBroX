@@ -10,7 +10,6 @@
 
 const int INF = 1000000;
 
-// Add to top of engine.cpp
 const uint64_t FILE_A = 0x0101010101010101ULL;
 
 // Precompute masks for passed pawn checks
@@ -129,23 +128,18 @@ int evalKingSafety(const Position& pos, Color side) {
     score -= (missingCount * KING_SHIELD_PENALTY);
   }
 
-  // (Optional: You can keep the Open File penalty logic here if you want,
-  // but usually the shield check covers 90% of cases).
-
   return score;
 }
 
-const int ROOK_OPEN_FILE_BONUS = 10;      // Lowered (Mobility covers the rest)
-const int ROOK_SEMI_OPEN_FILE_BONUS = 5;  // Lowered
-const int ROOK_ON_7TH_BONUS = 20;         // Keep this high
+const int ROOK_OPEN_FILE_BONUS = 10;
+const int ROOK_SEMI_OPEN_FILE_BONUS = 5;
+const int ROOK_ON_7TH_BONUS = 20;
 
 const int BISHOP_PAIR_BONUS = 30;
 
-// New Mobility Weights (Weight per attacked square)
 const int KNIGHT_MOBILITY = 4;
 const int BISHOP_MOBILITY = 5;
 const int ROOK_MOBILITY = 3;
-// const int QUEEN_MOBILITY = 2;
 
 int evalPieces(const Position& pos, Color side) {
   int score = 0;
@@ -174,7 +168,6 @@ int evalPieces(const Position& pos, Color side) {
     // We use the precomputed attack table directly
     uint64_t attacks = attack::knightAttacks[sq];
     // We don't care about occupancy for knight mobility (freedom of movement)
-    // possibly mask with ~my_pieces to count only valid moves
     score += __builtin_popcountll(attacks & ~pos.occupancies[side]) * KNIGHT_MOBILITY;
     knights &= (knights - 1);
   }
@@ -276,7 +269,6 @@ int Engine::scoreMove(const Move& m, Position& pos, int ply) {
   else if (attacker == PAWN && (1ULL << m.to) == pos.mEnPassentSquare) {
     score = 10000 + mvv_lva[PAWN][PAWN];
   }
-  // 3. Killers (CRITICAL FIX HERE)
   // Check if ply is valid (>= 0) because Quiescence passes -1 to disable this
   else if (ply >= 0 && ply < MAX_PLY) {
     if (m.from == killerMoves[ply][0].from && m.to == killerMoves[ply][0].to) {
@@ -420,7 +412,6 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
     }
   }
 
-  // --- TT PROBE ---
   int ttScore;
   Move ttMove = Move::null();
 
@@ -428,7 +419,7 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
     if (ply > 0) return ttScore;
   }
 
-  // OPTIMIZATION: Prefetch next TT entry (commented out for now)
+  // OPTIMIZATION: Prefetch next TT entry
   if (depth > 1 && ttMove.from != 0) {
     uint64_t childKey = pos.predictChildHash(ttMove);
     __builtin_prefetch(&tt.buckets[childKey & (tt.numBuckets - 1)]);
@@ -448,7 +439,7 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
     // Save current state
     int R = 2;  // Reduction amount (standard is 2, sometimes 3 for very high depth)
 
-    pos.doNullMove();  // You need to implement this in Position class
+    pos.doNullMove();
 
     // Search with a "Null Window" and reduced depth
     // We pass -beta + 1 and -beta to verify if opponent can improve
@@ -639,9 +630,6 @@ int Engine::negaMax(Position& pos, int depth, int alpha, int beta, std::stop_tok
 }
 
 Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
-  // pos.printBoard();
-
-  // tt.clear()
   mStartTime = std::chrono::steady_clock::now();
   mTimeAllocated = timeLimitMs;
   mStop = false;
@@ -673,7 +661,6 @@ Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
 
     std::vector<Move> pvLine = getPV(pos, depth);
 
-    // Print PV
     std::cout << "info depth " << depth << " score cp " << score << " nodes " << nodes << " pv";
 
     for (const Move& m : pvLine) {
@@ -716,7 +703,6 @@ Move Engine::search(Position& pos, int timeLimitMs, std::stop_token stoken) {
     }
   }
 
-  // std::cout << "search end" << std::endl;
   std::cout << "bestmove " << util::moveToString(mLastBestMove) << std::endl;
 
   return mLastBestMove;
