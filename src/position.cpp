@@ -13,7 +13,7 @@
 const uint64_t NOT_A_FILE = 0xFEFEFEFEFEFEFEFEULL;
 const uint64_t NOT_H_FILE = 0x7F7F7F7F7F7F7F7FULL;
 
-int PST_CACHE[2][6][64];  // Definition
+int PST_CACHE[2][6][64];
 
 void initPST() {
   for (int p = 0; p < 6; p++) {
@@ -38,7 +38,7 @@ bool initialized = false;
 
 void init() {
   if (initialized) return;
-  std::mt19937_64 gen(123456789);  // Fixed seed for reproducibility
+  std::mt19937_64 gen(123456789);
   std::uniform_int_distribution<uint64_t> dist;
 
   for (int c = 0; c < 2; c++) {
@@ -284,8 +284,8 @@ uint64_t Position::attackGeneration(int square, int type, Color color) {
   } else if (type == BISHOP) {
     attack = get_bishop_attacks(square, occupancies[2]);
   } else if (type == QUEEN) {
-    attack = (get_rook_attacks(square, occupancies[2]) |
-              get_bishop_attacks(square, occupancies[2]));
+    attack =
+        (get_rook_attacks(square, occupancies[2]) | get_bishop_attacks(square, occupancies[2]));
   } else if (type == KING) {
     attack = attack::kingAttacks[square];
   } else if (type == KNIGHT) {
@@ -320,7 +320,6 @@ void Position::getCaptures(Color color, MoveList& moveList) {
   }
 
   // --- PAWN CAPTURES (Bitwise Optimization) ---
-  // Instead of iterating every pawn, we shift the entire bitboard.
   uint64_t pawns = pieces[color][PAWN];
   uint64_t pawnAttacks = 0ULL;
 
@@ -337,7 +336,6 @@ void Position::getCaptures(Color color, MoveList& moveList) {
 
       // Determine which pawn moved.
       // If we came from NE (to-9), check if a pawn was there.
-      // Note: It's possible for a square to be attacked by two pawns.
       // We must check valid sources.
 
       int from_ne = to - 9;
@@ -464,16 +462,12 @@ void Position::getCaptures(Color color, MoveList& moveList) {
   while (attacker) {
     int from = __builtin_ctzll(attacker);
 
-    // OPTIMIZATION: Get attacks and IMMEDIATELY mask with captureMask
-    // This prevents generating quiet moves and then filtering them later.
     uint64_t attacks = get_bishop_attacks(from, occupancies[2]) & enemies;
 
     while (attacks) {
       int to = __builtin_ctzll(attacks);
       int victim = board[to];
 
-      // Note: King capture check should theoretically not be needed if move gen is pseudo-legal
-      // and previous moves were legal, but we keep safety if needed.
       if (victim != KING) {
         int score = 0;
         if (victim != NOPIECE) {
@@ -520,7 +514,6 @@ void Position::getCaptures(Color color, MoveList& moveList) {
 }
 
 // 3. Helper function for adding pawn moves (handling promotions/En Passant)
-// Add this as a private helper method in your Position class or inline it.
 inline void Position::addPawnCaptureMove(int from, int to, MoveList& moveList) {
   int victim = board[to];
   int score = 0;
@@ -850,9 +843,6 @@ void Position::undoNullMove() {
 void Position::getMoves(Color color, MoveList& moveList) {
   Color enemy = (color == WHITE) ? BLACK : WHITE;
   uint64_t enemyKing = pieces[enemy][KING];
-  if (enemyKing == 0) {
-    std::cout << "CRITICAL ERROR: Enemy King missing for color " << enemy << std::endl;
-  }
 
   for (int i = 0; i < 6; i++) {
     uint64_t piece = pieces[color][i];
