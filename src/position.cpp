@@ -1,14 +1,14 @@
-#include "position.hpp"
+#include "../include/position.hpp"
 
 #include <cstdint>
 #include <iostream>
 #include <random>
 #include <sstream>
 
-#include "attack.hpp"
-#include "magicBitboards.hpp"
-#include "types.hpp"
-#include "utils.hpp"
+#include "../include/attack.hpp"
+#include "../include/magicBitboards.hpp"
+#include "../include/types.hpp"
+#include "../include/utils.hpp"
 
 const uint64_t NOT_A_FILE = 0xFEFEFEFEFEFEFEFEULL;
 const uint64_t NOT_H_FILE = 0x7F7F7F7F7F7F7F7FULL;

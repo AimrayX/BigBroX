@@ -1,4 +1,4 @@
-#include "UCIHandler.hpp"
+#include "../include/UCIHandler.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -8,10 +8,10 @@
 #include <thread>
 #include <unordered_map>
 
-#include "attack.hpp"
-#include "magicBitboards.hpp"
-#include "types.hpp"
-#include "utils.hpp"
+#include "../include/attack.hpp"
+#include "../include/magicBitboards.hpp"
+#include "../include/types.hpp"
+#include "../include/utils.hpp"
 
 std::string UCIHandler::getStartingPosition(std::string commandLine) {
   std::string fenPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";

@@ -1,4 +1,4 @@
-#include "magicBitboards.hpp"
+#include "../include/magicBitboards.hpp"
 
 #include <cstring>
 

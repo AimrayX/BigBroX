@@ -36,15 +36,16 @@ endif()
 
 # 4. Sources
 set(SOURCES
-    main.cpp
-    engine.cpp
-    position.cpp
-    transposition.cpp
-    attack.cpp
-    utils.cpp
-    UCIHandler.cpp
-    game.cpp
-    magicBitboards.cpp
+    src/main.cpp
+    src/engine.cpp
+    src/position.cpp
+    src/transposition.cpp
+    src/attack.cpp
+    src/utils.cpp
+    src/UCIHandler.cpp
+    src/game.cpp
+    src/magicBitboards.cpp
+    include/
 )
 
 add_executable(chess_engine ${SOURCES})

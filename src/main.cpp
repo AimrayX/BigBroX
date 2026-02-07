@@ -1,4 +1,4 @@
-#include "UCIHandler.hpp"
+#include "../include/UCIHandler.hpp"
 
 int main() {
 

@@ -1,12 +1,12 @@
-#include "engine.hpp"
+#include "../include/engine.hpp"
 
 #include <chrono>
 #include <iostream>
 
-#include "attack.hpp"
-#include "magicBitboards.hpp"
-#include "types.hpp"
-#include "utils.hpp"
+#include "../include/attack.hpp"
+#include "../include/magicBitboards.hpp"
+#include "../include/types.hpp"
+#include "../include/utils.hpp"
 
 const int INF = 1000000;
 

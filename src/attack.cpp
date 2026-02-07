@@ -1,9 +1,9 @@
-#include "attack.hpp"
+#include "../include/attack.hpp"
 
 #include <cstdint>
 
-#include "types.hpp"
-#include "magicBitboards.hpp"
+#include "../include/types.hpp"
+#include "../include/magicBitboards.hpp"
 
 void attack::computeKnightAttacks() {
   uint64_t mask = 0ULL;

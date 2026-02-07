@@ -1,5 +1,5 @@
-#include "utils.hpp"
-#include "types.hpp"
+#include "../include/utils.hpp"
+#include "../include/types.hpp"
 
 uint64_t util::makeSquare(char file, char rank) {
     return ((rank - '1') * 8 + (file - 'a'));
