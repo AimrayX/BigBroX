@@ -26,6 +26,7 @@ private:
     std::string getStartingPosition(std::string commandLine);
     std::jthread t1;
 
+
 public:
     Game game;
     int state;
