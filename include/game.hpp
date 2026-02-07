@@ -1,25 +1,18 @@
 #ifndef GAME_HPP
 #define GAME_HPP
 
-#include "position.hpp"
 #include "engine.hpp"
+#include "position.hpp"
 #include "types.hpp"
 
-class Game
-{
-private:
-    
-public:
-    Position position;
-    Engine engine;
+class Game {
+ private:
+ public:
+  Position position;
+  Engine engine;
 
-    void printBoard();
-
-    Game();
-    ~Game();
+  Game();
+  ~Game();
 };
-
-
-
 
 #endif

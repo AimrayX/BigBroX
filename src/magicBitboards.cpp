@@ -2,17 +2,13 @@
 
 #include <cstring>
 
-// --- Globals ---
 Magic rookMagics[64];
 Magic bishopMagics[64];
 
 // Huge array to store all precomputed attacks (~2.3 MB)
 // Rooks need 4096 per square (12 bits), Bishops need fewer.
-// We allocate enough space for "Plain Magics".
 Bitboard rookAttackTable[64 * 4096];
 Bitboard bishopAttackTable[64 * 512];
-
-// --- Helper Functions ---
 
 // 1. Random Number Generator for finding Magics
 uint64_t random_u64() {
@@ -96,7 +92,6 @@ Bitboard bishop_attacks_slow(int sq, Bitboard block) {
   return attacks;
 }
 
-// Counts bits set to 1
 int count_1s(Bitboard b) {
   int r = 0;
   while (b) {
@@ -106,11 +101,9 @@ int count_1s(Bitboard b) {
   return r;
 }
 
-// 3. The Index Function
 // This performs the "Magic": (Blockers & Mask) * Magic >> Shift
 int transform(Bitboard b, uint64_t magic, int bits) { return (int)((b * magic) >> (64 - bits)); }
 
-// 4. Find Magic Number
 // This function loops until it finds a magic number that works for a specific square
 void find_magic(int sq, int m, int bishop) {
   Bitboard mask = bishop ? get_bishop_mask(sq) : get_rook_mask(sq);
@@ -179,8 +172,6 @@ void find_magic(int sq, int m, int bishop) {
     }
   }
 }
-
-// --- Public Functions ---
 
 void init_magic_bitboards() {
   for (int i = 0; i < 64; i++) find_magic(i, 12, 0);  // Rooks

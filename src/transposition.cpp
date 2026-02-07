@@ -14,7 +14,6 @@ TranspositionTable::TranspositionTable(int sizeInMB) {
     numBuckets *= 2;
   }
 
-  // Resize vector. std::vector usually respects alignment of the type.
   buckets.resize(numBuckets);
 
   std::cout << "TT Initialized with " << numBuckets << " buckets (" << numBuckets * 4
@@ -24,7 +23,6 @@ TranspositionTable::TranspositionTable(int sizeInMB) {
 TranspositionTable::~TranspositionTable() {}
 
 void TranspositionTable::clear() {
-  // Re-filling with empty buckets
   std::fill(buckets.begin(), buckets.end(), TTBucket());
 }
 
