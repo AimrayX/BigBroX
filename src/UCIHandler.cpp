@@ -62,7 +62,6 @@ int UCIHandler::loop() {
           case UCICommand::Uci:
             std::cout << "id name BigBroX 1.0" << std::endl;
             std::cout << "id author Hall T." << std::endl;
-            // std::cout << "option name Hash type spin default 16 min 1 max 1024" << std::endl;
             std::cout << "uciok" << std::endl;
             break;
 
@@ -79,9 +78,8 @@ int UCIHandler::loop() {
             break;
 
           case UCICommand::Position: {
-            // 1. Setup Variables
             std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-            std::vector<std::string> moveStrings;  // Store moves here temporarily
+            std::vector<std::string> moveStrings;
             std::string subToken;
             ss >> subToken;  // Read "startpos" or "fen"
 
@@ -111,16 +109,12 @@ int UCIHandler::loop() {
               }
             }
 
-            // 3. Set the Board State (Base)
             game.position.setStartingPosition(fen);
 
-            // 4. Apply Moves (The Matcher Logic)
-            // This runs for BOTH startpos and fen cases
             for (const std::string& moveStr : moveStrings) {
-              // A. Parse the simple target coordinates
               Move target = util::parseUCIMove(moveStr);
-              // B. Generate legal moves to find the one with correct flags
               MoveList legalMoves;
+
               game.position.getMoves(game.position.mSideToMove, legalMoves);
               bool found = false;
               for (int i = 0; i < legalMoves.count; i++) {
@@ -136,7 +130,6 @@ int UCIHandler::loop() {
                 std::cout << "Debug: Could not match move " << moveStr << std::endl;
               }
             }
-
             break;
           }
           case UCICommand::Go: {
@@ -167,24 +160,25 @@ int UCIHandler::loop() {
                 ss >> token;
                 movetime = std::stoi(token);
               } else if (token == "infinite") {
-                movetime = 100000;
+                movetime = 2000000000;
               } else if (token == "depth") {
                 ss >> token;
                 game.engine.setDepth(std::stoi(token));
+                movetime = 2000000000;
               }
             }
+
             int allocatedTime = movetime;
-            if (!movetime)
+            if (!allocatedTime) {
               allocatedTime = (game.position.mSideToMove == WHITE) ? ((wtime / 30) + winc)
                                                                    : ((btime / 30) + binc);
-            if (allocatedTime)
-              allocatedTime = std::max(10, allocatedTime - 50);
-            else
-              allocatedTime = 2000000000;
-            // std::cout << "allocated Time: " << allocatedTime << std::endl;
+              allocatedTime = std::max(10, allocatedTime - 70);
+            }
+
             t1 = std::jthread([this, allocatedTime](std::stop_token st) {
               game.engine.search(game.position, allocatedTime, st);
             });
+
             break;
           }
 

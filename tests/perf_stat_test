@@ -1,0 +1,3 @@
+#!/bin/bash
+
+(cat ./bench.txt; sleep 12) | perf stat -e cache-misses,cache-references ../build/chess_engine

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+(cat ./bench.txt; sleep 14) | sudo perf record ../build/chess_engine
