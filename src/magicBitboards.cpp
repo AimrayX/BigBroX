@@ -143,7 +143,7 @@ void find_magic(int sq, int m, int bishop) {
       int index = transform(blockers[i], magic, blockBits);
 
       if (used[index] == 0) {
-        used[index] = attacks[i];  // New mapping
+        used[index] = attacks[i];
       } else if (used[index] != attacks[i]) {
         fail = true;  // Collision! Two different attacks map to same index
         break;
