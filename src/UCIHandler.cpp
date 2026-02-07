@@ -132,6 +132,7 @@ int UCIHandler::loop() {
             }
             break;
           }
+
           case UCICommand::Go: {
             if (t1.joinable()) t1.request_stop();
             int wtime = 0;
