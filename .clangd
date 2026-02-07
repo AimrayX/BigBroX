@@ -1,7 +1,0 @@
-CompileFlags:
-  Add:
-    - -std=c++20        # Fixes your 'stop_token' error
-    - -Wall             # Basic warnings
-    - -Wextra           # Extra warnings
-    - -Wshadow          # Warns about variable name conflicts
-    - -Wpedantic        # Warns about non-standard C++

@@ -4,9 +4,9 @@
 #include <iostream>
 
 #include "attack.hpp"
+#include "magicBitboards.hpp"
 #include "types.hpp"
 #include "utils.hpp"
-#include "magicBitboards.hpp"
 
 const int INF = 1000000;
 
@@ -304,11 +304,10 @@ int Engine::scoreMove(const Move& m, Position& pos, int ply) {
 }
 
 int Engine::quiescence(Position& pos, int alpha, int beta, std::stop_token& stoken) {
-  if (stoken.stop_requested()) return 0;
-
   if (pos.gamePly > 5000) return 0;
 
   if ((nodes & 2047) == 0) {
+    if (stoken.stop_requested()) return 0;
     auto now = std::chrono::steady_clock::now();
     long long elapsed =
         std::chrono::duration_cast<std::chrono::milliseconds>(now - mStartTime).count();
